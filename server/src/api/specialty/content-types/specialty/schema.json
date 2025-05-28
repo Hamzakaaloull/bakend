@@ -1,0 +1,24 @@
+{
+  "kind": "collectionType",
+  "collectionName": "specialties",
+  "info": {
+    "singularName": "specialty",
+    "pluralName": "specialties",
+    "displayName": "specialty",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "nom": {
+      "type": "string"
+    },
+    "users": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "plugin::users-permissions.user",
+      "mappedBy": "specialty"
+    }
+  }
+}

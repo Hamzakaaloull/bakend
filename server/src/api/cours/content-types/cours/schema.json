@@ -1,0 +1,29 @@
+{
+  "kind": "collectionType",
+  "collectionName": "courss",
+  "info": {
+    "singularName": "cours",
+    "pluralName": "courss",
+    "displayName": "cours",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "title": {
+      "type": "string"
+    },
+    "cour_contant": {
+      "type": "media",
+      "multiple": true,
+      "required": false,
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ]
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "kind": "collectionType",
+  "collectionName": "brigades",
+  "info": {
+    "singularName": "brigade",
+    "pluralName": "brigades",
+    "displayName": "brigade",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "nom": {
+      "type": "string"
+    },
+    "stage": {
+      "type": "string"
+    },
+    "effectif_theorique": {
+      "type": "integer"
+    },
+    "user": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "plugin::users-permissions.user",
+      "mappedBy": "brigade"
+    },
+    "seances": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::seance.seance",
+      "mappedBy": "brigade"
+    }
+  }
+}

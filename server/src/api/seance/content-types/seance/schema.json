@@ -1,0 +1,59 @@
+{
+  "kind": "collectionType",
+  "collectionName": "seances",
+  "info": {
+    "singularName": "seance",
+    "pluralName": "seances",
+    "displayName": "seance",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "date": {
+      "type": "date"
+    },
+    "start_time": {
+      "type": "time"
+    },
+    "brigade": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::brigade.brigade",
+      "inversedBy": "seances"
+    },
+    "cour": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "api::cours.cours"
+    },
+    "user": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "plugin::users-permissions.user",
+      "inversedBy": "seances"
+    },
+    "end_time": {
+      "type": "time"
+    },
+    "time_presence": {
+      "type": "time"
+    },
+    "Appele": {
+      "type": "text"
+    },
+    "historique": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::historique.historique",
+      "inversedBy": "seances"
+    },
+    "salle": {
+      "type": "relation",
+      "relation": "manyToOne",
+      "target": "api::salle.salle",
+      "inversedBy": "seances"
+    }
+  }
+}

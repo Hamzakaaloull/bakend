@@ -1,0 +1,28 @@
+{
+  "kind": "collectionType",
+  "collectionName": "user_statuses",
+  "info": {
+    "singularName": "user-status",
+    "pluralName": "user-statuses",
+    "displayName": "user-status",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "isOnline": {
+      "type": "boolean",
+      "default": false
+    },
+    "lastSeen": {
+      "type": "datetime"
+    },
+    "user": {
+      "type": "relation",
+      "relation": "oneToOne",
+      "target": "plugin::users-permissions.user",
+      "mappedBy": "user_status"
+    }
+  }
+}

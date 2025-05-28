@@ -1,0 +1,24 @@
+{
+  "kind": "collectionType",
+  "collectionName": "historiques",
+  "info": {
+    "singularName": "historique",
+    "pluralName": "historiques",
+    "displayName": "historique",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "date": {
+      "type": "datetime"
+    },
+    "seances": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::seance.seance",
+      "mappedBy": "historique"
+    }
+  }
+}

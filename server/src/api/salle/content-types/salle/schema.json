@@ -1,0 +1,27 @@
+{
+  "kind": "collectionType",
+  "collectionName": "salles",
+  "info": {
+    "singularName": "salle",
+    "pluralName": "salles",
+    "displayName": "Salle",
+    "description": ""
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "nom": {
+      "type": "string"
+    },
+    "seances": {
+      "type": "relation",
+      "relation": "oneToMany",
+      "target": "api::seance.seance",
+      "mappedBy": "salle"
+    },
+    "bloc": {
+      "type": "string"
+    }
+  }
+}

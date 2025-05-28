@@ -1,0 +1,27 @@
+{
+  "kind": "collectionType",
+  "collectionName": "info_apps",
+  "info": {
+    "singularName": "info-app",
+    "pluralName": "info-apps",
+    "displayName": "info-app"
+  },
+  "options": {
+    "draftAndPublish": true
+  },
+  "attributes": {
+    "name": {
+      "type": "string"
+    },
+    "logo": {
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ],
+      "type": "media",
+      "multiple": true
+    }
+  }
+}
