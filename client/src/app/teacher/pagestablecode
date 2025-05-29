@@ -1,0 +1,218 @@
+"use client";
+import { useState } from "react";
+import { useTheme, keyframes, alpha } from "@mui/material/styles";
+import {
+  TextField,
+  Button,
+  Box,
+  Typography,
+  Alert,
+  CircularProgress,
+} from "@mui/material";
+import { useRouter } from "next/navigation";
+
+const pulse = keyframes`
+  0% { transform: scale(1); }
+  50% { transform: scale(1.05); }
+  100% { transform: scale(1); }
+`;
+
+export default function LoginPage() {
+  const theme = useTheme();
+  const [emailOrName, setEmailOrName] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const router = useRouter();
+
+  const handleLogin = async () => {
+    setLoading(true);
+    setError(null);
+
+    try {
+      // هنا نحدد ال API URL حسب المكان
+      const baseUrl =
+        typeof window !== "undefined" &&
+        (window.location.hostname === "localhost" ||
+          window.location.hostname === "127.0.0.1")
+          ? "http://localhost:1337"
+          : "http://192.168.1.47:1337";
+
+      // تسجيل الدخول
+      const loginResponse = await fetch(`${baseUrl}/api/auth/local`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ identifier: emailOrName, password }),
+      });
+      const loginData = await loginResponse.json();
+
+      if (loginResponse.ok) {
+        localStorage.setItem("token", loginData.jwt);
+
+        // جلب معلومات المستخدم
+        const userResponse = await fetch(
+          `${baseUrl}/api/users/me?populate=role`,
+          {
+            headers: { Authorization: `Bearer ${loginData.jwt}` },
+          }
+        );
+        const userData = await userResponse.json();
+
+        if (userResponse.ok) {
+          const userRole = userData.role.name;
+          if (userRole === "teacher") {
+            router.push("/teacher");
+          } else if (userRole === "admin" || userRole === "manger") {
+            router.push("/admin");
+          }
+        } else {
+          setError(
+            userData.error?.message || "حدث خطأ أثناء جلب بيانات المستخدم."
+          );
+        }
+      } else {
+        setError(loginData.error?.message || "خطأ في تسجيل الدخول.");
+      }
+    } catch (error) {
+      setError("حدث خطأ في الشبكة. يرجى التحقق من الاتصال.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <Box
+      sx={{
+        minHeight: "100vh",
+        background: `linear-gradient(135deg, ${
+          theme.palette.primary.main
+        } 0%, ${alpha(theme.palette.primary.main, 0.8)} 100%)`,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        position: "relative",
+      }}
+    >
+      <Box
+        sx={{
+          p: 6,
+          backgroundColor: alpha(theme.palette.background.paper, 0.9),
+          backdropFilter: "blur(10px)",
+          borderRadius: theme.shape.borderRadius,
+          boxShadow: theme.shadows[4],
+          maxWidth: "400px",
+          width: "100%",
+          transition: theme.transitions.create("transform", {
+            duration: theme.transitions.duration.enteringScreen,
+          }),
+          "&:hover": { transform: "scale(1.03)" },
+        }}
+      >
+        <Typography
+          variant="h4"
+          align="center"
+          sx={{
+            mb: 4,
+            color: theme.palette.primary.main,
+            fontWeight: "bold",
+            textShadow: "1px 1px 2px rgba(0, 0, 0, 0.1)",
+          }}
+        >
+          تسجيل الدخول
+        </Typography>
+
+        {error && (
+          <Alert
+            severity="error"
+            sx={{
+              mb: 3,
+              bgcolor: alpha(theme.palette.error.light, 0.3),
+              borderRadius: theme.shape.borderRadius,
+              border: `1px solid ${theme.palette.error.main}`,
+              color: theme.palette.error.main,
+            }}
+          >
+            {error}
+          </Alert>
+        )}
+
+        <TextField
+          fullWidth
+          label="اسم المستخدم أو البريد الإلكتروني"
+          value={emailOrName}
+          onChange={(e) => setEmailOrName(e.target.value)}
+          sx={{
+            mb: 3,
+            "& .MuiOutlinedInput-root": {
+              borderRadius: theme.shape.borderRadius,
+              "&:hover fieldset": {
+                borderColor: theme.palette.primary.main,
+              },
+            },
+            "& .Mui-focused fieldset": {
+              borderColor: theme.palette.primary.main,
+            },
+          }}
+          InputProps={{
+            style: { color: theme.palette.text.primary },
+          }}
+        />
+
+        <TextField
+          fullWidth
+          label="كلمة المرور"
+          type="password"
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+          sx={{
+            mb: 4,
+            "& .MuiOutlinedInput-root": {
+              borderRadius: theme.shape.borderRadius,
+              "&:hover fieldset": {
+                borderColor: theme.palette.primary.main,
+              },
+            },
+            "& .Mui-focused fieldset": {
+              borderColor: theme.palette.primary.main,
+            },
+          }}
+          InputProps={{
+            style: { color: theme.palette.text.primary },
+          }}
+        />
+
+        <Button
+          fullWidth
+          variant="contained"
+          onClick={handleLogin}
+          disabled={loading}
+          sx={{
+            bgcolor: theme.palette.primary.main,
+            color: theme.palette.primary.contrastText,
+            py: 2,
+            borderRadius: theme.shape.borderRadius,
+            boxShadow: theme.shadows[2],
+            transition: theme.transitions.create(["background", "transform"], {
+              duration: theme.transitions.duration.enteringScreen,
+            }),
+            animation: loading ? `${pulse} 1.5s infinite` : "none",
+            "&:hover": {
+              bgcolor: theme.palette.primary.dark,
+              transform: loading ? "scale(1)" : "scale(1.02)",
+              boxShadow: theme.shadows[4],
+            },
+          }}
+        >
+          {loading ? (
+            <CircularProgress
+              size={24}
+              sx={{ color: theme.palette.primary.contrastText }}
+            />
+          ) : (
+            "تسجيل الدخول"
+          )}
+        </Button>
+      </Box>
+    </Box>
+  );
+}

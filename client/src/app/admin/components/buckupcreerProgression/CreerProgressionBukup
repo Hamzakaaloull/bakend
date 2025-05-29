@@ -1,0 +1,605 @@
+"use client";
+import React, { useState, useEffect } from "react";
+import useUser from "../../hooks/useUser";
+import {
+  Box,
+  Button,
+  Paper,
+  Table,
+  TableHead,
+  TableBody,
+  TableRow,
+  TableCell,
+  Select,
+  MenuItem,
+  FormControl,
+  InputLabel,
+  Typography,
+  TextField,
+  Stack,
+  CircularProgress,
+  Snackbar,
+  Alert,
+} from "@mui/material";
+import { motion, AnimatePresence } from "framer-motion";
+
+const MotionTableRow = motion(TableRow);
+
+export default function CreerProgression() {
+  const { brigades, salles, userData, courses, loading, error } = useUser();
+  const API_URL = process.env.NEXT_PUBLIC_STRAPI_API_URL;
+
+  const brigadeList = Array.isArray(brigades?.data) ? brigades.data : [];
+  const salleList = Array.isArray(salles?.data) ? salles.data : [];
+  const userList = Array.isArray(userData) ? userData : [];
+  const courseList = Array.isArray(courses?.data) ? courses.data : [];
+
+  const [slotsOpen, setSlotsOpen] = useState(false);
+  const [customSlots, setCustomSlots] = useState([
+    { start: "08:00", end: "09:45" },
+    { start: "10:00", end: "12:00" },
+    { start: "13:00", end: "14:30" },
+    { start: "14:40", end: "16:00" },
+  ]);
+
+  const [viewMode, setViewMode] = useState("create"); // create | show | edit
+  const [selection, setSelection] = useState({});
+  const [rowErrors, setRowErrors] = useState({});
+  const [submitting, setSubmitting] = useState(false);
+  const [updating, setUpdating] = useState(false);
+  const [seances, setSeances] = useState([]);
+  const [editedSeances, setEditedSeances] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(
+    new Date().toISOString().split("T")[0]
+  );
+  const [snackbar, setSnackbar] = useState({
+    open: false,
+    message: "",
+    severity: "success",
+  });
+
+  // جلب الحصص لليوم المختار
+  useEffect(() => {
+    if (viewMode !== "create") {
+      (async () => {
+        try {
+          const token = localStorage.getItem("token");
+          const headers = token ? { Authorization: `Bearer ${token}` } : {};
+          const res = await fetch(
+            `${API_URL}/api/seances?filters[date][$eq]=${selectedDate}&populate[brigade]=true&populate[salle]=true&populate[user]=true&populate[cour]=true`,
+            { headers }
+          );
+          const json = await res.json();
+          console.log(json);
+          if (!res.ok) throw new Error("فشل في جلب الحصص");
+          const items = json.data.map((item) => ({
+            id: item.id,
+            documentId: item.documentId,
+            brigadeId: item.brigade.id,
+            brigadeName: item.brigade.nom,
+            salleId: item.salle?.id,
+            salleName: item.salle?.nom,
+            userId: item.user.id,
+            userName: item.user.username || item.user.email,
+            courseId: item.cour.id,
+            courseTitle: item.cour.title,
+            start_time: item.start_time.slice(0, 5),
+            end_time: item.end_time.slice(0, 5),
+          }));
+          setSeances(items);
+          if (viewMode === "edit") {
+            setEditedSeances(items.map((i) => ({ ...i })));
+          }
+        } catch (err) {
+          console.error(err);
+        }
+      })();
+    }
+  }, [viewMode, selectedDate]);
+
+  // مزامنة نسخة التحرير
+  useEffect(() => {
+    if (viewMode === "edit") {
+      setEditedSeances(seances.map((s) => ({ ...s })));
+    }
+  }, [viewMode, seances]);
+
+  const handleSlotTimeChange = (idx, field, value) =>
+    setCustomSlots((prev) =>
+      prev.map((s, i) => (i === idx ? { ...s, [field]: value } : s))
+    );
+
+  const handleChange = (brId, slotIdx, field, value) => {
+    setSelection((prev) => ({
+      ...prev,
+      [brId]: {
+        ...(prev[brId] || {}),
+        [slotIdx]: {
+          ...(prev[brId]?.[slotIdx] || {}),
+          [field]: value,
+        },
+      },
+    }));
+    setRowErrors((errs) => {
+      const key = `${brId}-${slotIdx}-${field}`;
+      if (errs[key]) {
+        const copy = { ...errs };
+        delete copy[key];
+        return copy;
+      }
+      return errs;
+    });
+  };
+
+  const handleEditChange = (index, field, value) =>
+    setEditedSeances((prev) =>
+      prev.map((s, i) => (i === index ? { ...s, [field]: value } : s))
+    );
+
+  // إنشاء الحصص
+  const handleCreate = async () => {
+    const errs = {};
+    brigadeList.forEach((b) =>
+      customSlots.forEach((_, idx) => {
+        const cell = selection[b.id]?.[idx] || {};
+        ["course", "salle", "user"].forEach((f) => {
+          if (!cell[f]) errs[`${b.id}-${idx}-${f}`] = "مطلوب";
+        });
+      })
+    );
+    if (Object.keys(errs).length) {
+      setRowErrors(errs);
+      return setSnackbar({
+        open: true,
+        message: "الرجاء ملء جميع الحقول.",
+        severity: "error",
+      });
+    }
+    setSubmitting(true);
+    try {
+      const token = localStorage.getItem("token");
+      const headers = {
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+      };
+      const creations = brigadeList.flatMap((b) =>
+        customSlots.map((slot, idx) => {
+          const sel = selection[b.id][idx];
+          return fetch(`${API_URL}/api/seances`, {
+            method: "POST",
+            headers,
+            body: JSON.stringify({
+              data: {
+                brigade: b.id,
+                salle: sel.salle,
+                user: sel.user,
+                cour: sel.course,
+                date: selectedDate,
+                start_time: slot.start + ":00.000",
+                end_time: slot.end + ":00.000",
+                Appele: "",
+                time_presence: null,
+              },
+            }),
+          }).then((r) => r.json());
+        })
+      );
+      await Promise.all(creations);
+      setSubmitting(false);
+      setViewMode("show");
+      setSnackbar({
+        open: true,
+        message: "تم إنشاء الحصص لليوم بنجاح.",
+        severity: "success",
+      });
+    } catch (err) {
+      setSubmitting(false);
+      setSnackbar({
+        open: true,
+        message: "خطأ أثناء الإنشاء: " + err.message,
+        severity: "error",
+      });
+    }
+  };
+
+  // تعديل الحصص—المفتاح: استخدام PUT بدل PATCH والتعامل مع استجابة نصّية
+  const handleUpdateConfirm = async () => {
+    setUpdating(true);
+    try {
+      const token = localStorage.getItem("token");
+      const headers = {
+        "Content-Type": "application/json",
+        ...(token && { Authorization: `Bearer ${token}` }),
+      };
+      for (let s of editedSeances) {
+        const res = await fetch(`${API_URL}/api/seances/${s.documentId}`, {
+          method: "PUT",
+          headers,
+          body: JSON.stringify({
+            data: {
+              start_time: s.start_time + ":00.000",
+              end_time: s.end_time + ":00.000",
+              salle: s.salleId,
+              cour: s.courseId,
+              user: s.userId,
+              date: selectedDate,
+            },
+          }),
+        });
+        const text = await res.text();
+        if (!res.ok) throw new Error(text);
+        // إذا النص قابل للـ JSON، يمكن فكّه لكن ليس ضرورياً هنا
+      }
+      setUpdating(false);
+      setViewMode("show");
+      setSnackbar({
+        open: true,
+        message: "تم تحديث الحصص بنجاح.",
+        severity: "success",
+      });
+    } catch (err) {
+      setUpdating(false);
+      setSnackbar({
+        open: true,
+        message: "خطأ أثناء التحديث: " + err.message,
+        severity: "error",
+      });
+    }
+  };
+
+  const handleBack = () => {
+    setViewMode(viewMode === "edit" ? "show" : "create");
+  };
+
+  if (loading)
+    return (
+      <Box p={4} className="flex justify-center">
+        <CircularProgress />
+      </Box>
+    );
+  if (error)
+    return (
+      <Box p={4}>
+        <Typography color="error">خطأ في جلب البيانات: {error}</Typography>
+      </Box>
+    );
+
+  return (
+    <Box p={4} className="space-y-4">
+      <Typography variant="h5">
+        {viewMode === "create"
+          ? "إنشاء جدول الحصص"
+          : viewMode === "show"
+          ? "عرض جدول الحصص"
+          : "تعديل جدول الحصص"}
+      </Typography>
+
+      {viewMode !== "edit" && (
+        <TextField
+          label="اختر التاريخ"
+          type="date"
+          value={selectedDate}
+          onChange={(e) => setSelectedDate(e.target.value)}
+          InputLabelProps={{ shrink: true }}
+          fullWidth
+        />
+      )}
+
+      {viewMode === "create" && (
+        <>
+          <Button onClick={() => setSlotsOpen((o) => !o)}>
+            {slotsOpen ? "إخفاء الفترات" : "تعديل فترات الوقت"}
+          </Button>
+          {slotsOpen && (
+            <Box className="flex space-x-4 mb-2">
+              {customSlots.map((slot, idx) => (
+                <Stack key={idx} spacing={1} className="flex-1">
+                  <Typography variant="subtitle2">الحصة {idx + 1}</Typography>
+                  <TextField
+                    label="من"
+                    type="time"
+                    value={slot.start}
+                    onChange={(e) =>
+                      handleSlotTimeChange(idx, "start", e.target.value)
+                    }
+                    InputLabelProps={{ shrink: true }}
+                    size="small"
+                    fullWidth
+                  />
+                  <TextField
+                    label="إلى"
+                    type="time"
+                    value={slot.end}
+                    onChange={(e) =>
+                      handleSlotTimeChange(idx, "end", e.target.value)
+                    }
+                    InputLabelProps={{ shrink: true }}
+                    size="small"
+                    fullWidth
+                  />
+                </Stack>
+              ))}
+            </Box>
+          )}
+        </>
+      )}
+
+      <Paper className="rounded-lg shadow-lg overflow-auto">
+        <Table>
+          <TableHead className="bg-gray-800 text-white">
+            <TableRow>
+              <TableCell className="text-white">Brigade</TableCell>
+              {customSlots.map((slot, idx) => (
+                <TableCell key={idx} align="center" className="text-white">
+                  {`${slot.start}–${slot.end}`}
+                </TableCell>
+              ))}
+            </TableRow>
+          </TableHead>
+          <TableBody>
+            <AnimatePresence>
+              {brigadeList.map((b) => (
+                <MotionTableRow
+                  key={b.id}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                >
+                  <TableCell>{b.nom}</TableCell>
+                  {customSlots.map((slot, idx) => {
+                    const cellShow = seances.find(
+                      (s) => s.brigadeId === b.id && s.start_time === slot.start
+                    );
+                    const editIdx = editedSeances.findIndex(
+                      (s) => s.brigadeId === b.id && s.start_time === slot.start
+                    );
+                    return (
+                      <TableCell key={idx}>
+                        {viewMode === "create" && (
+                          <Stack spacing={1}>
+                            <FormControl size="small" fullWidth>
+                              <InputLabel>Cours</InputLabel>
+                              <Select
+                                label="Cours"
+                                value={selection[b.id]?.[idx]?.course || ""}
+                                onChange={(e) =>
+                                  handleChange(
+                                    b.id,
+                                    idx,
+                                    "course",
+                                    e.target.value
+                                  )
+                                }
+                              >
+                                <MenuItem value="">—</MenuItem>
+                                {courseList.map((c) => (
+                                  <MenuItem key={c.id} value={c.id}>
+                                    {c.title}
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                            <FormControl size="small" fullWidth>
+                              <InputLabel>Salle</InputLabel>
+                              <Select
+                                label="Salle"
+                                value={selection[b.id]?.[idx]?.salle || ""}
+                                onChange={(e) =>
+                                  handleChange(
+                                    b.id,
+                                    idx,
+                                    "salle",
+                                    e.target.value
+                                  )
+                                }
+                              >
+                                <MenuItem value="">—</MenuItem>
+                                {salleList.map((sal) => (
+                                  <MenuItem key={sal.id} value={sal.id}>
+                                    {sal.nom}
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                            <FormControl size="small" fullWidth>
+                              <InputLabel>Prof</InputLabel>
+                              <Select
+                                label="Prof"
+                                value={selection[b.id]?.[idx]?.user || ""}
+                                onChange={(e) =>
+                                  handleChange(
+                                    b.id,
+                                    idx,
+                                    "user",
+                                    e.target.value
+                                  )
+                                }
+                              >
+                                <MenuItem value="">—</MenuItem>
+                                {userList.map((u) => (
+                                  <MenuItem key={u.id} value={u.id}>
+                                    {u.username || u.email}
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                          </Stack>
+                        )}
+                        {viewMode === "show" && cellShow && (
+                          <Stack spacing={0.5}>
+                            <Typography variant="caption">
+                              {cellShow.courseTitle}
+                            </Typography>
+                            <Typography variant="caption">
+                              {cellShow.salleName}
+                            </Typography>
+                            <Typography variant="caption">
+                              {cellShow.userName}
+                            </Typography>
+                          </Stack>
+                        )}
+                        {viewMode === "edit" && editIdx > -1 && (
+                          <Stack spacing={1}>
+                            <TextField
+                              type="time"
+                              fullWidth
+                              size="small"
+                              value={editedSeances[editIdx].start_time}
+                              onChange={(e) =>
+                                handleEditChange(
+                                  editIdx,
+                                  "start_time",
+                                  e.target.value
+                                )
+                              }
+                            />
+                            <TextField
+                              type="time"
+                              fullWidth
+                              size="small"
+                              value={editedSeances[editIdx].end_time}
+                              onChange={(e) =>
+                                handleEditChange(
+                                  editIdx,
+                                  "end_time",
+                                  e.target.value
+                                )
+                              }
+                            />
+                            <FormControl size="small" fullWidth>
+                              <InputLabel>Salle</InputLabel>
+                              <Select
+                                label="Salle"
+                                value={editedSeances[editIdx].salleId || ""}
+                                onChange={(e) =>
+                                  handleEditChange(
+                                    editIdx,
+                                    "salleId",
+                                    e.target.value
+                                  )
+                                }
+                              >
+                                <MenuItem value="">—</MenuItem>
+                                {salleList.map((sal) => (
+                                  <MenuItem key={sal.id} value={sal.id}>
+                                    {sal.nom}
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                            <FormControl size="small" fullWidth>
+                              <InputLabel>Cours</InputLabel>
+                              <Select
+                                label="Cours"
+                                value={editedSeances[editIdx].courseId || ""}
+                                onChange={(e) =>
+                                  handleEditChange(
+                                    editIdx,
+                                    "courseId",
+                                    e.target.value
+                                  )
+                                }
+                              >
+                                <MenuItem value="">—</MenuItem>
+                                {courseList.map((c) => (
+                                  <MenuItem key={c.id} value={c.id}>
+                                    {c.title}
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                            <FormControl size="small" fullWidth>
+                              <InputLabel>Prof</InputLabel>
+                              <Select
+                                label="Prof"
+                                value={editedSeances[editIdx].userId || ""}
+                                onChange={(e) =>
+                                  handleEditChange(
+                                    editIdx,
+                                    "userId",
+                                    e.target.value
+                                  )
+                                }
+                              >
+                                <MenuItem value="">—</MenuItem>
+                                {userList.map((u) => (
+                                  <MenuItem key={u.id} value={u.id}>
+                                    {u.username || u.email}
+                                  </MenuItem>
+                                ))}
+                              </Select>
+                            </FormControl>
+                          </Stack>
+                        )}
+                      </TableCell>
+                    );
+                  })}
+                </MotionTableRow>
+              ))}
+            </AnimatePresence>
+          </TableBody>
+        </Table>
+      </Paper>
+
+      <Box className="flex space-x-2">
+        {viewMode === "create" && (
+          <>
+            <Button
+              variant="contained"
+              onClick={handleCreate}
+              disabled={submitting}
+              startIcon={submitting && <CircularProgress size={20} />}
+            >
+              {submitting ? "جاري الإنشاء..." : "إنشاء"}
+            </Button>
+            <Button variant="outlined" onClick={() => setSelection({})}>
+              إعادة ضبط
+            </Button>
+          </>
+        )}
+        {viewMode === "show" && (
+          <>
+            <Button variant="contained" onClick={() => setViewMode("create")}>
+              العودة
+            </Button>
+            <Button
+              variant="contained"
+              color="secondary"
+              onClick={() => setViewMode("edit")}
+            >
+              تعديل
+            </Button>
+          </>
+        )}
+        {viewMode === "edit" && (
+          <>
+            <Button
+              variant="contained"
+              color="primary"
+              onClick={handleUpdateConfirm}
+              disabled={updating}
+              startIcon={updating && <CircularProgress size={20} />}
+            >
+              {updating ? "جاري التحديث..." : "تأكيد التحديث"}
+            </Button>
+            <Button variant="outlined" onClick={handleBack}>
+              إلغاء
+            </Button>
+          </>
+        )}
+      </Box>
+
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={4000}
+        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+      >
+        <Alert
+          severity={snackbar.severity}
+          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
+    </Box>
+  );
+}

@@ -54,6 +54,16 @@
       "relation": "manyToOne",
       "target": "api::salle.salle",
       "inversedBy": "seances"
+    },
+    "userPhoto": {
+      "allowedTypes": [
+        "images",
+        "files",
+        "videos",
+        "audios"
+      ],
+      "type": "media",
+      "multiple": false
     }
   }
 }

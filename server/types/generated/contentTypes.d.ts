@@ -566,6 +566,7 @@ export interface ApiSeanceSeance extends Struct.CollectionTypeSchema {
       'manyToOne',
       'plugin::users-permissions.user'
     >;
+    userPhoto: Schema.Attribute.Media<'images' | 'files' | 'videos' | 'audios'>;
   };
 }
 

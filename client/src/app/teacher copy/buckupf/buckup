@@ -1,0 +1,1179 @@
+// // src/app/teacher/page.js
+// "use client";
+// import { useEffect, useState } from "react";
+// import {
+//   Box,
+//   Typography,
+//   List,
+//   ListItem,
+//   ListItemText,
+//   ListItemIcon,
+//   Divider,
+//   Paper,
+//   Table,
+//   TableBody,
+//   TableCell,
+//   TableContainer,
+//   TableHead,
+//   TableRow,
+//   Accordion,
+//   AccordionSummary,
+//   AccordionDetails,
+//   Button,
+//   Chip,
+// } from "@mui/material";
+// import {
+//   Home as HomeIcon,
+//   EventNote as EventNoteIcon,
+//   ExpandMore,
+//   Description,
+// } from "@mui/icons-material";
+// import { useRouter } from "next/navigation";
+
+// export default function TeacherPage() {
+//   const [menuOption, setMenuOption] = useState("home");
+//   const [teacherInfo, setTeacherInfo] = useState(null);
+//   const [activeSessions, setActiveSessions] = useState([]);
+//   const [courses, setCourses] = useState([]);
+//   const router = useRouter();
+
+//   useEffect(() => {
+//     const token = localStorage.getItem("token");
+//     if (!token) router.push("/login");
+//     else {
+//       fetchTeacherData(token);
+//       fetchActiveSessions(token);
+//       fetchCourses(token);
+//     }
+//   }, []);
+
+//   // جلب بيانات المعلم
+//   const fetchTeacherData = async (token) => {
+//     try {
+//       const response = await fetch(
+//         "http://localhost:1337/api/users/me?populate=role",
+//         {
+//           headers: { Authorization: `Bearer ${token}` },
+//         }
+//       );
+//       const data = await response.json();
+//       setTeacherInfo(data);
+//     } catch (error) {
+//       console.error("Erreur lors de la récupération des données:", error);
+//     }
+//   };
+
+//   // جلب الجلسات النشطة
+//   const fetchActiveSessions = async (token) => {
+//     try {
+//       const now = new Date();
+//       const today = now.toISOString().split("T")[0];
+//       const currentTime = now.toTimeString().split(" ")[0];
+
+//       // تحديث الاستعلام لتحميل العلاقات
+//       const response = await fetch(
+//         `http://localhost:1337/api/seances?filters[date][$eq]=${today}&filters[start_time][$lte]=${currentTime}&filters[end_time][$gte]=${currentTime}&populate=cour,brigade`,
+//         { headers: { Authorization: `Bearer ${token}` } }
+//       );
+//       const data = await response.json();
+//       setActiveSessions(data.data || []);
+//     } catch (error) {
+//       console.error("Erreur lors de la récupération des sessions:", error);
+//     }
+//   };
+
+//   // جلب جميع المواد
+//   const fetchCourses = async (token) => {
+//     try {
+//       const response = await fetch("http://localhost:1337/api/courss", {
+//         headers: { Authorization: `Bearer ${token}` },
+//       });
+//       const data = await response.json();
+//       setCourses(data.data || []);
+//     } catch (error) {
+//       console.error("Erreur lors de la récupération des cours:", error);
+//     }
+//   };
+
+//   // دالة للعثور على المادة المرتبطة بالجلسة
+//   const findCourseById = (courseId) => {
+//     return courses.find((course) => course.id === courseId);
+//   };
+
+//   return (
+//     <Box sx={{ display: "flex", minHeight: "100vh" }}>
+//       {/* القائمة الجانبية */}
+//       <Box
+//         sx={{
+//           width: 280,
+//           backgroundColor: "#2E3B55",
+//           color: "white",
+//           boxShadow: "2px 0 5px rgba(0,0,0,0.1)",
+//           position: "fixed",
+//           left: 0,
+//           top: 0,
+//           bottom: 0,
+//         }}
+//       >
+//         <Typography
+//           variant="h5"
+//           sx={{
+//             textAlign: "center",
+//             mt: 3,
+//             mb: 4,
+//             fontWeight: "bold",
+//             color: "#BBDEFB",
+//           }}
+//         >
+//           Tableau de bord
+//         </Typography>
+//         <List>
+//           <ListItem
+//             button="true" // إصلاح تحذير React
+//             selected={menuOption === "home"}
+//             onClick={() => setMenuOption("home")}
+//             sx={{
+//               "&.Mui-selected": { backgroundColor: "#42A5F5" },
+//               borderRadius: "8px",
+//               mx: 2,
+//               mb: 1,
+//             }}
+//           >
+//             <ListItemIcon sx={{ color: "white" }}>
+//               <HomeIcon />
+//             </ListItemIcon>
+//             <ListItemText primary="Accueil" />
+//           </ListItem>
+//           <ListItem
+//             button="true" // إصلاح تحذير React
+//             selected={menuOption === "seance"}
+//             onClick={() => setMenuOption("seance")}
+//             sx={{
+//               "&.Mui-selected": { backgroundColor: "#42A5F5" },
+//               borderRadius: "8px",
+//               mx: 2,
+//               mb: 1,
+//             }}
+//           >
+//             <ListItemIcon sx={{ color: "white" }}>
+//               <EventNoteIcon />
+//             </ListItemIcon>
+//             <ListItemText primary="Séances" />
+//           </ListItem>
+//         </List>
+//       </Box>
+
+//       {/* المحتوى الرئيسي */}
+//       <Box
+//         component="main"
+//         sx={{
+//           flexGrow: 1,
+//           p: 4,
+//           ml: "280px",
+//           backgroundColor: "#F5F5F5",
+//           minHeight: "100vh",
+//         }}
+//       >
+//         {/* صفحة "الرئيسية" */}
+//         {menuOption === "home" && teacherInfo && (
+//           <Paper
+//             elevation={3}
+//             sx={{
+//               p: 4,
+//               borderRadius: "16px",
+//               backgroundColor: "#FFFFFF",
+//               mb: 4,
+//             }}
+//           >
+//             <Typography variant="h4" sx={{ mb: 3, color: "#2E3B55" }}>
+//               Informations Personnelles
+//             </Typography>
+//             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+//               <Typography>
+//                 <strong>Nom d'utilisateur:</strong> {teacherInfo.username}
+//               </Typography>
+//               <Typography>
+//                 <strong>Email:</strong> {teacherInfo.email}
+//               </Typography>
+//               <Typography>
+//                 <strong>Rôle:</strong>{" "}
+//                 {teacherInfo.role?.name || "Non spécifié"}
+//               </Typography>
+//               <Typography>
+//                 <strong>Date de création:</strong>{" "}
+//                 {new Date(teacherInfo.createdAt).toLocaleDateString("fr-FR")}
+//               </Typography>
+//             </Box>
+//           </Paper>
+//         )}
+
+//         {/* صفحة "الجلسات" */}
+//         {menuOption === "seance" && (
+//           <Box>
+//             <Typography variant="h4" sx={{ mb: 4, color: "#2E3B55" }}>
+//               Séances Actives
+//             </Typography>
+//             <TableContainer component={Paper} sx={{ mb: 4 }}>
+//               <Table>
+//                 <TableHead sx={{ backgroundColor: "#2E3B55" }}>
+//                   <TableRow>
+//                     <TableCell sx={{ color: "white" }}>Date</TableCell>
+//                     <TableCell sx={{ color: "white" }}>
+//                       Heure de début
+//                     </TableCell>
+//                     <TableCell sx={{ color: "white" }}>Heure de fin</TableCell>
+//                     <TableCell sx={{ color: "white" }}>Matière</TableCell>
+//                     <TableCell sx={{ color: "white" }}>Contenu</TableCell>
+//                   </TableRow>
+//                 </TableHead>
+//                 <TableBody>
+//                   {activeSessions.map((session) => {
+//                     const course = findCourseById(session.attributes.cour?.id); // العثور على المادة
+//                     return (
+//                       <TableRow key={session.id}>
+//                         <TableCell>
+//                           {new Date(session.attributes.date).toLocaleDateString(
+//                             "fr-FR"
+//                           )}
+//                         </TableCell>
+//                         <TableCell>
+//                           {session.attributes.start_time || "Non spécifiée"}
+//                         </TableCell>
+//                         <TableCell>
+//                           {session.attributes.end_time || "Non spécifiée"}
+//                         </TableCell>
+//                         <TableCell>
+//                           <strong>
+//                             {course?.attributes?.title || "Matière non trouvée"}
+//                           </strong>
+//                         </TableCell>
+//                         <TableCell>
+//                           <Accordion
+//                             sx={{ boxShadow: "none", bgcolor: "transparent" }}
+//                           >
+//                             <AccordionSummary expandIcon={<ExpandMore />}>
+//                               <Button
+//                                 variant="contained"
+//                                 color="primary"
+//                                 startIcon={<Description />}
+//                                 size="small"
+//                                 disabled={!course?.attributes?.cour_content}
+//                               >
+//                                 Voir le contenu
+//                               </Button>
+//                             </AccordionSummary>
+//                             <AccordionDetails>
+//                               {course?.attributes?.cour_content ? (
+//                                 <Box sx={{ mt: 2 }}>
+//                                   <Typography variant="subtitle1" gutterBottom>
+//                                     Contenu du cours :
+//                                   </Typography>
+//                                   <Box
+//                                     sx={{
+//                                       display: "flex",
+//                                       flexDirection: "column",
+//                                       gap: 1,
+//                                     }}
+//                                   >
+//                                     {course.attributes.cour_content
+//                                       .split(",")
+//                                       .map((file, index) => (
+//                                         <Chip
+//                                           key={index}
+//                                           label={file.trim()}
+//                                           icon={<Description />}
+//                                           variant="outlined"
+//                                           sx={{ maxWidth: "300px" }}
+//                                         />
+//                                       ))}
+//                                   </Box>
+//                                 </Box>
+//                               ) : (
+//                                 <Typography>
+//                                   Aucun contenu disponible
+//                                 </Typography>
+//                               )}
+//                             </AccordionDetails>
+//                           </Accordion>
+//                         </TableCell>
+//                       </TableRow>
+//                     );
+//                   })}
+//                 </TableBody>
+//               </Table>
+//             </TableContainer>
+//           </Box>
+//         )}
+//       </Box>
+//     </Box>
+//   );
+// }
+
+
+
+
+// // the kast
+// // src/app/teacher/page.js
+// "use client";
+// // src/app/teacher/page.js
+// import { useEffect, useState } from "react";
+// import {
+//   Box,
+//   Typography,
+//   List,
+//   ListItem,
+//   ListItemText,
+//   ListItemIcon,
+//   Divider,
+//   Paper,
+//   Table,
+//   TableBody,
+//   TableCell,
+//   TableContainer,
+//   TableHead,
+//   TableRow,
+//   Button,
+//   Alert,
+// } from "@mui/material";
+// import {
+//   Home as HomeIcon,
+//   EventNote as EventNoteIcon,
+// } from "@mui/icons-material";
+// import { useRouter } from "next/navigation";
+
+// export default function TeacherPage() {
+//   const [menuOption, setMenuOption] = useState("home");
+//   const [teacherInfo, setTeacherInfo] = useState(null);
+//   const [activeSession, setActiveSession] = useState(null);
+//   const [showSuccess, setShowSuccess] = useState(false);
+//   const router = useRouter();
+
+//   useEffect(() => {
+//     const token = localStorage.getItem("token");
+//     if (!token) router.push("/login");
+//     else {
+//       fetchTeacherData(token);
+//       checkAndUpdateActiveSession(token);
+//     }
+//   }, []);
+
+//   // جلب بيانات المعلم
+//   const fetchTeacherData = async (token) => {
+//     try {
+//       const response = await fetch(
+//         "http://localhost:1337/api/users/me?populate=role",
+//         {
+//           headers: { Authorization: `Bearer ${token}` },
+//         }
+//       );
+//       const data = await response.json();
+//       setTeacherInfo(data);
+//     } catch (error) {
+//       console.error("Erreur lors de la récupération des données:", error);
+//     }
+//   };
+
+//   // التحقق من الجلسة النشطة وتسجيل وقت الحضور
+//   const checkAndUpdateActiveSession = async (token) => {
+//     try {
+//       const now = new Date();
+//       const today = now.toISOString().split("T")[0];
+//       const currentTime = now.toTimeString().split(" ")[0];
+
+//       // جلب جميع الجلسات المجدولة للمعلم
+//       const response = await fetch(
+//         `http://localhost:1337/api/seances?filters[date][$eq]=${today}&populate=cour`,
+//         { headers: { Authorization: `Bearer ${token}` } }
+//       );
+//       const data = await response.json();
+//       console.log(data);
+//       // البحث عن الجلسة النشطة
+//       const session = data.data.find((s) => {
+//         const startTime = new Date(`${s.date}T${s.start_time}`);
+//         const endTime = new Date(`${s.date}T${s.end_time}`);
+//         return now >= startTime && now <= endTime;
+//       });
+
+//       if (session) {
+//         setActiveSession(session);
+
+//         // تسجيل وقت الحضور في الجلسة
+//         await fetch(`http://localhost:1337/api/seances/${session.id}`, {
+//           method: "PUT",
+//           headers: {
+//             Authorization: `Bearer ${token}`,
+//             "Content-Type": "application/json",
+//           },
+//           body: JSON.stringify({
+//             data: {
+//               time_presence: now.toISOString(),
+//             },
+//           }),
+//         });
+
+//         setShowSuccess(true); // عرض رسالة نجاح
+//         console.log("Session ID:", session.id);
+//       }
+//     } catch (error) {
+//       console.error(
+//         "Erreur lors de la vérification de la session active:",
+//         error
+//       );
+//     }
+//   };
+
+//   return (
+//     <Box sx={{ display: "flex", minHeight: "100vh" }}>
+//       {/* القائمة الجانبية */}
+//       <Box
+//         sx={{
+//           width: 280,
+//           backgroundColor: "#2E3B55",
+//           color: "white",
+//           boxShadow: "2px 0 5px rgba(0,0,0,0.1)",
+//           position: "fixed",
+//           left: 0,
+//           top: 0,
+//           bottom: 0,
+//         }}
+//       >
+//         <Typography
+//           variant="h5"
+//           sx={{
+//             textAlign: "center",
+//             mt: 3,
+//             mb: 4,
+//             fontWeight: "bold",
+//             color: "#BBDEFB",
+//           }}
+//         >
+//           Tableau de bord
+//         </Typography>
+//         <List>
+//           <ListItem
+//             button
+//             selected={menuOption === "home"}
+//             onClick={() => setMenuOption("home")}
+//             sx={{
+//               "&.Mui-selected": { backgroundColor: "#42A5F5" },
+//               borderRadius: "8px",
+//               mx: 2,
+//               mb: 1,
+//             }}
+//           >
+//             <ListItemIcon sx={{ color: "white" }}>
+//               <HomeIcon />
+//             </ListItemIcon>
+//             <ListItemText primary="Accueil" />
+//           </ListItem>
+//           <ListItem
+//             button
+//             selected={menuOption === "seance"}
+//             onClick={() => setMenuOption("seance")}
+//             sx={{
+//               "&.Mui-selected": { backgroundColor: "#42A5F5" },
+//               borderRadius: "8px",
+//               mx: 2,
+//               mb: 1,
+//             }}
+//           >
+//             <ListItemIcon sx={{ color: "white" }}>
+//               <EventNoteIcon />
+//             </ListItemIcon>
+//             <ListItemText primary="Séances" />
+//           </ListItem>
+//         </List>
+//       </Box>
+
+//       {/* المحتوى الرئيسي */}
+//       <Box
+//         component="main"
+//         sx={{
+//           flexGrow: 1,
+//           p: 4,
+//           ml: "280px",
+//           backgroundColor: "#F5F5F5",
+//           minHeight: "100vh",
+//         }}
+//       >
+//         {/* صفحة "الرئيسية" */}
+//         {menuOption === "home" && teacherInfo && (
+//           <Paper
+//             elevation={3}
+//             sx={{
+//               p: 4,
+//               borderRadius: "16px",
+//               backgroundColor: "#FFFFFF",
+//               mb: 4,
+//             }}
+//           >
+//             <Typography variant="h4" sx={{ mb: 3, color: "#2E3B55" }}>
+//               Informations Personnelles
+//             </Typography>
+//             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+//               <Typography>
+//                 <strong>Nom d'utilisateur:</strong> {teacherInfo.username}
+//               </Typography>
+//               <Typography>
+//                 <strong>Email:</strong> {teacherInfo.email}
+//               </Typography>
+//               <Typography>
+//                 <strong>Rôle:</strong>{" "}
+//                 {teacherInfo.role?.name || "Non spécifié"}
+//               </Typography>
+//             </Box>
+//           </Paper>
+//         )}
+
+//         {/* صفحة "الجلسات" */}
+//         {menuOption === "seance" && (
+//           <Box>
+//             <Typography variant="h4" sx={{ mb: 4, color: "#2E3B55" }}>
+//               Séance Active
+//             </Typography>
+//             {showSuccess && (
+//               <Alert severity="success" sx={{ mb: 4 }}>
+//                 Votre présence a été enregistrée avec succès!
+//               </Alert>
+//             )}
+//             {activeSession ? (
+//               <TableContainer component={Paper}>
+//                 <Table>
+//                   <TableHead sx={{ backgroundColor: "#2E3B55" }}>
+//                     <TableRow>
+//                       <TableCell sx={{ color: "white" }}>Date</TableCell>
+//                       <TableCell sx={{ color: "white" }}>
+//                         Heure de début
+//                       </TableCell>
+//                       <TableCell sx={{ color: "white" }}>
+//                         Heure de fin
+//                       </TableCell>
+//                       <TableCell sx={{ color: "white" }}>Matière</TableCell>
+//                       <TableCell sx={{ color: "white" }}>Présence</TableCell>
+//                     </TableRow>
+//                   </TableHead>
+//                   <TableBody>
+//                     <TableRow>
+//                       <TableCell>
+//                         {new Date(activeSession.date).toLocaleDateString(
+//                           "fr-FR"
+//                         )}
+//                       </TableCell>
+//                       <TableCell>{activeSession.start_time}</TableCell>
+//                       <TableCell>{activeSession.end_time}</TableCell>
+//                       <TableCell>
+//                         {activeSession.cour?.title || "Matière non trouvée"}
+//                       </TableCell>
+//                       <TableCell>
+//                         {activeSession.time_presence
+//                           ? new Date(
+//                               activeSession.time_presence
+//                             ).toLocaleString("fr-FR")
+//                           : "Non enregistrée"}
+//                       </TableCell>
+//                     </TableRow>
+//                   </TableBody>
+//                 </Table>
+//               </TableContainer>
+//             ) : (
+//               <Alert severity="info">Aucune séance active trouvée.</Alert>
+//             )}
+//           </Box>
+//         )}
+//       </Box>
+//     </Box>
+//   );
+// }
+
+
+
+
+
+// last one 
+
+// src/app/teacher/page.js
+// src/app/teacher/page.js
+// "use client";
+// import { useEffect, useState } from "react";
+// import {
+//   Box,
+//   Typography,
+//   List,
+//   ListItem,
+//   ListItemText,
+//   ListItemIcon,
+//   Divider,
+//   Paper,
+//   Table,
+//   TableBody,
+//   TableCell,
+//   TableContainer,
+//   TableHead,
+//   TableRow,
+//   Button,
+//   Alert,
+// } from "@mui/material";
+// import {
+//   Home as HomeIcon,
+//   EventNote as EventNoteIcon,
+// } from "@mui/icons-material";
+// import { useRouter } from "next/navigation";
+
+// export default function TeacherPage() {
+//   const [menuOption, setMenuOption] = useState("home");
+//   const [teacherInfo, setTeacherInfo] = useState(null);
+//   const [activeSession, setActiveSession] = useState(null);
+//   const [showSuccess, setShowSuccess] = useState(false);
+//   const router = useRouter();
+
+//   useEffect(() => {
+//     const token = localStorage.getItem("token");
+//     if (!token) router.push("/login");
+//     else {
+//       fetchTeacherData(token);
+//       checkAndUpdateActiveSession(token);
+//     }
+//   }, []);
+
+//   // جلب بيانات المعلم
+//   const fetchTeacherData = async (token) => {
+//     try {
+//       const response = await fetch(
+//         "http://localhost:1337/api/users/me?populate=role",
+//         {
+//           headers: { Authorization: `Bearer ${token}` },
+//         }
+//       );
+//       const data = await response.json();
+//       setTeacherInfo(data);
+//     } catch (error) {
+//       console.error("Erreur lors de la récupération des données:", error);
+//     }
+//   };
+
+//   // التحقق من الجلسة النشطة وتسجيل وقت الحضور
+//   const checkAndUpdateActiveSession = async (token) => {
+//     try {
+//       const now = new Date();
+//       const today = now.toISOString().split("T")[0];
+//       const currentTime = now.toTimeString().split(" ")[0];
+
+//       // جلب جميع الجلسات المجدولة للمعلم
+//       const response = await fetch(
+//         `http://localhost:1337/api/seances?filters[date][$eq]=${today}&populate=cour`,
+//         { headers: { Authorization: `Bearer ${token}` } }
+//       );
+//       const data = await response.json();
+//       console.log(data);
+//       // البحث عن الجلسة النشطة
+//       const session = data.data.find((s) => {
+//         const startTime = new Date(`${s.date}T${s.start_time}`);
+//         const endTime = new Date(`${s.date}T${s.end_time}`);
+//         return now >= startTime && now <= endTime;
+//       });
+
+//       if (session) {
+//         setActiveSession(session);
+
+//         // تسجيل وقت الحضور في الجلسة
+//         await fetch(`http://localhost:1337/api/seances/${session.id}`, {
+//           method: "PUT",
+//           headers: {
+//             Authorization: `Bearer ${token}`,
+//             "Content-Type": "application/json",
+//           },
+//           body: JSON.stringify({
+//             data: {
+//               time_presence: now.toISOString(),
+//             },
+//           }),
+//         });
+
+//         setShowSuccess(true); // عرض رسالة نجاح
+//         console.log("Session ID:", session.id);
+//       }
+//     } catch (error) {
+//       console.error(
+//         "Erreur lors de la vérification de la session active:",
+//         error
+//       );
+//     }
+//   };
+
+//   return (
+//     <Box sx={{ display: "flex", minHeight: "100vh" }}>
+//       {/* القائمة الجانبية */}
+//       <Box
+//         sx={{
+//           width: 280,
+//           backgroundColor: "#2E3B55",
+//           color: "white",
+//           boxShadow: "2px 0 5px rgba(0,0,0,0.1)",
+//           position: "fixed",
+//           left: 0,
+//           top: 0,
+//           bottom: 0,
+//         }}
+//       >
+//         <Typography
+//           variant="h5"
+//           sx={{
+//             textAlign: "center",
+//             mt: 3,
+//             mb: 4,
+//             fontWeight: "bold",
+//             color: "#BBDEFB",
+//           }}
+//         >
+//           Tableau de bord
+//         </Typography>
+//         <List>
+//           <ListItem
+//             button
+//             selected={menuOption === "home"}
+//             onClick={() => setMenuOption("home")}
+//             sx={{
+//               "&.Mui-selected": { backgroundColor: "#42A5F5" },
+//               borderRadius: "8px",
+//               mx: 2,
+//               mb: 1,
+//             }}
+//           >
+//             <ListItemIcon sx={{ color: "white" }}>
+//               <HomeIcon />
+//             </ListItemIcon>
+//             <ListItemText primary="Accueil" />
+//           </ListItem>
+//           <ListItem
+//             button
+//             selected={menuOption === "seance"}
+//             onClick={() => setMenuOption("seance")}
+//             sx={{
+//               "&.Mui-selected": { backgroundColor: "#42A5F5" },
+//               borderRadius: "8px",
+//               mx: 2,
+//               mb: 1,
+//             }}
+//           >
+//             <ListItemIcon sx={{ color: "white" }}>
+//               <EventNoteIcon />
+//             </ListItemIcon>
+//             <ListItemText primary="Séances" />
+//           </ListItem>
+//         </List>
+//       </Box>
+
+//       {/* المحتوى الرئيسي */}
+//       <Box
+//         component="main"
+//         sx={{
+//           flexGrow: 1,
+//           p: 4,
+//           ml: "280px",
+//           backgroundColor: "#F5F5F5",
+//           minHeight: "100vh",
+//         }}
+//       >
+//         {/* صفحة "الرئيسية" */}
+//         {menuOption === "home" && teacherInfo && (
+//           <Paper
+//             elevation={3}
+//             sx={{
+//               p: 4,
+//               borderRadius: "16px",
+//               backgroundColor: "#FFFFFF",
+//               mb: 4,
+//             }}
+//           >
+//             <Typography variant="h4" sx={{ mb: 3, color: "#2E3B55" }}>
+//               Informations Personnelles
+//             </Typography>
+//             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+//               <Typography>
+//                 <strong>Nom d'utilisateur:</strong> {teacherInfo.username}
+//               </Typography>
+//               <Typography>
+//                 <strong>Email:</strong> {teacherInfo.email}
+//               </Typography>
+//               <Typography>
+//                 <strong>Rôle:</strong>{" "}
+//                 {teacherInfo.role?.name || "Non spécifié"}
+//               </Typography>
+//             </Box>
+//           </Paper>
+//         )}
+
+//         {/* صفحة "الجلسات" */}
+//         {menuOption === "seance" && (
+//           <Box>
+//             <Typography variant="h4" sx={{ mb: 4, color: "#2E3B55" }}>
+//               Séance Active
+//             </Typography>
+//             {showSuccess && (
+//               <Alert severity="success" sx={{ mb: 4 }}>
+//                 Votre présence a été enregistrée avec succès!
+//               </Alert>
+//             )}
+//             {activeSession ? (
+//               <TableContainer component={Paper}>
+//                 <Table>
+//                   <TableHead sx={{ backgroundColor: "#2E3B55" }}>
+//                     <TableRow>
+//                       <TableCell sx={{ color: "white" }}>Date</TableCell>
+//                       <TableCell sx={{ color: "white" }}>
+//                         Heure de début
+//                       </TableCell>
+//                       <TableCell sx={{ color: "white" }}>
+//                         Heure de fin
+//                       </TableCell>
+//                       <TableCell sx={{ color: "white" }}>Matière</TableCell>
+//                       <TableCell sx={{ color: "white" }}>Présence</TableCell>
+//                     </TableRow>
+//                   </TableHead>
+//                   <TableBody>
+//                     <TableRow>
+//                       <TableCell>
+//                         {new Date(activeSession.date).toLocaleDateString(
+//                           "fr-FR"
+//                         )}
+//                       </TableCell>
+//                       <TableCell>{activeSession.start_time}</TableCell>
+//                       <TableCell>{activeSession.end_time}</TableCell>
+//                       <TableCell>
+//                         {activeSession.cour?.title || "Matière non trouvée"}
+//                       </TableCell>
+//                       <TableCell>
+//                         {activeSession.time_presence
+//                           ? new Date(
+//                               activeSession.time_presence
+//                             ).toLocaleString("fr-FR")
+//                           : "Non enregistrée"}
+//                       </TableCell>
+//                     </TableRow>
+//                   </TableBody>
+//                 </Table>
+//               </TableContainer>
+//             ) : (
+//               <Alert severity="info">Aucune séance active trouvée.</Alert>
+//             )}
+//           </Box>
+//         )}
+//       </Box>
+//     </Box>
+//   );
+// }
+
+
+
+
+
+// last one 2
+
+// src/app/teacher/page.js
+// "use client";
+// import { useEffect, useState } from "react";
+// import {
+//   Box,
+//   Typography,
+//   List,
+//   ListItem,
+//   ListItemText,
+//   ListItemIcon,
+//   Divider,
+//   Paper,
+//   Table,
+//   TableBody,
+//   TableCell,
+//   TableContainer,
+//   TableHead,
+//   TableRow,
+//   Button,
+//   Alert,
+// } from "@mui/material";
+// import {
+//   Home as HomeIcon,
+//   EventNote as EventNoteIcon,
+// } from "@mui/icons-material";
+// import { useRouter } from "next/navigation";
+// import Link from "next/link";
+
+// export default function TeacherPage() {
+//   const [menuOption, setMenuOption] = useState("home");
+//   const [teacherInfo, setTeacherInfo] = useState(null);
+//   const [activeSession, setActiveSession] = useState(null);
+//   const [showSuccess, setShowSuccess] = useState(false);
+//   const router = useRouter();
+
+//   useEffect(() => {
+//     const token = localStorage.getItem("token");
+//     if (!token) router.push("/login");
+//     else {
+//       fetchTeacherData(token);
+//       checkAndUpdateActiveSession(token);
+//     }
+//   }, []);
+
+//   // جلب بيانات المعلم مع جميع الحقول
+//   const fetchTeacherData = async (token) => {
+//     try {
+//       const response = await fetch(
+//         "http://localhost:1337/api/users/me?populate=role", // تأكد من تحميل الدور
+//         {
+//           headers: { Authorization: `Bearer ${token}` },
+//         }
+//       );
+//       const data = await response.json();
+//       setTeacherInfo(data);
+//     } catch (error) {
+//       console.error("Erreur lors de la récupération des données:", error);
+//     }
+//   };
+
+//   // التحقق من الجلسة النشطة وتسجيل وقت الحضور
+//   const checkAndUpdateActiveSession = async (token) => {
+//     try {
+//       const now = new Date();
+//       const today = now.toISOString().split("T")[0];
+//       const currentTime = now.toTimeString().split(" ")[0];
+
+//       // تحديث معلمة populate لتحميل العلاقة مع cour بشكل صحيح
+//       const response = await fetch(
+//         `http://localhost:1337/api/seances?filters[date][$eq]=${today}&populate[cour][populate][0]=cour_contant`, // استخدام populate=cour
+//         { headers: { Authorization: `Bearer ${token}` } }
+//       );
+//       const data = await response.json();
+//       console.log("Données des sessions:", data);
+
+//       if (data.error) {
+//         console.error("Erreur Strapi:", data.error);
+//         return;
+//       }
+
+//       // البحث عن الجلسة النشطة
+//       const session = data.data.find((s) => {
+//         const startTime = new Date(`${s.date}T${s.start_time}`);
+//         const endTime = new Date(`${s.date}T${s.end_time}`);
+//         return now >= startTime && now <= endTime;
+//       });
+
+//       if (session) {
+//         setActiveSession(session);
+
+//         // تنسيق الوقت لـ time_presence (HH:mm)
+//         const formattedTime = now.toLocaleTimeString("fr-FR", {
+//           hour: "2-digit",
+//           minute: "2-digit",
+//         });
+
+//         // تحديث الجلسة مع تسجيل وقت الحضور
+//         const updateResponse = await fetch(
+//           `http://localhost:1337/api/seances/${session.id}`,
+//           {
+//             method: "PUT",
+//             headers: {
+//               Authorization: `Bearer ${token}`,
+//               "Content-Type": "application/json",
+//             },
+//             body: JSON.stringify({
+//               data: {
+//                 time_presence: formattedTime,
+//               },
+//             }),
+//           }
+//         );
+
+//         if (updateResponse.ok) {
+//           setShowSuccess(true);
+//           console.log("Présence enregistrée avec succès!");
+//         } else {
+//           console.error(
+//             "Erreur lors de la mise à jour:",
+//             updateResponse.statusText
+//           );
+//         }
+//       }
+//     } catch (error) {
+//       console.error("Erreur globale:", error);
+//     }
+//   };
+
+//   return (
+//     <Box sx={{ display: "flex", minHeight: "100vh" }}>
+//       {/* القائمة الجانبية */}
+//       <Box
+//         sx={{
+//           width: 280,
+//           backgroundColor: "#2E3B55",
+//           color: "white",
+//           boxShadow: "2px 0 5px rgba(0,0,0,0.1)",
+//           position: "fixed",
+//           left: 0,
+//           top: 0,
+//           bottom: 0,
+//         }}
+//       >
+//         <Typography
+//           variant="h5"
+//           sx={{
+//             textAlign: "center",
+//             mt: 3,
+//             mb: 4,
+//             fontWeight: "bold",
+//             color: "#BBDEFB",
+//           }}
+//         >
+//           Tableau de bord
+//         </Typography>
+//         <List>
+//           <ListItem
+//             button={`true`}
+//             selected={menuOption === "home"}
+//             onClick={() => setMenuOption("home")}
+//             sx={{
+//               "&.Mui-selected": { backgroundColor: "#42A5F5" },
+//               borderRadius: "8px",
+//               mx: 2,
+//               mb: 1,
+//             }}
+//           >
+//             <ListItemIcon sx={{ color: "white" }}>
+//               <HomeIcon />
+//             </ListItemIcon>
+//             <ListItemText primary="Accueil" />
+//           </ListItem>
+//           <ListItem
+//             button={`true`}
+//             selected={menuOption === "seance"}
+//             onClick={() => setMenuOption("seance")}
+//             sx={{
+//               "&.Mui-selected": { backgroundColor: "#42A5F5" },
+//               borderRadius: "8px",
+//               mx: 2,
+//               mb: 1,
+//             }}
+//           >
+//             <ListItemIcon sx={{ color: "white" }}>
+//               <EventNoteIcon />
+//             </ListItemIcon>
+//             <ListItemText primary="Séances" />
+//           </ListItem>
+//         </List>
+//       </Box>
+
+//       {/* المحتوى الرئيسي */}
+//       <Box
+//         component="main"
+//         sx={{
+//           flexGrow: 1,
+//           p: 4,
+//           ml: "280px",
+//           backgroundColor: "#F5F5F5",
+//           minHeight: "100vh",
+//         }}
+//       >
+//         {/* صفحة "الرئيسية" */}
+//         {menuOption === "home" && teacherInfo && (
+//           <Paper
+//             elevation={3}
+//             sx={{
+//               p: 4,
+//               borderRadius: "16px",
+//               backgroundColor: "#FFFFFF",
+//               mb: 4,
+//             }}
+//           >
+//             <Typography variant="h4" sx={{ mb: 3, color: "#2E3B55" }}>
+//               Informations Personnelles
+//             </Typography>
+//             <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+//               <Typography>
+//                 <strong>Nom d'utilisateur:</strong> {teacherInfo.username}
+//               </Typography>
+//               <Typography>
+//                 <strong>Email:</strong> {teacherInfo.email}
+//               </Typography>
+//               <Typography>
+//                 <strong>Rôle:</strong>{" "}
+//                 {teacherInfo.role?.name || "Non spécifié"}
+//               </Typography>
+//               <Typography>
+//                 <strong>Date de création:</strong>{" "}
+//                 {new Date(teacherInfo.createdAt).toLocaleDateString("fr-FR")}
+//               </Typography>
+//               <Typography>
+//                 <strong>Dernière mise à jour:</strong>{" "}
+//                 {new Date(teacherInfo.updatedAt).toLocaleDateString("fr-FR")}
+//               </Typography>
+//             </Box>
+//           </Paper>
+//         )}
+
+//         {/* صفحة "الجلسات" */}
+//         {menuOption === "seance" && (
+//           <Box>
+//             <Typography variant="h4" sx={{ mb: 4, color: "#2E3B55" }}>
+//               Séance Active
+//             </Typography>
+//             {showSuccess && (
+//               <Alert severity="success" sx={{ mb: 4 }}>
+//                 Votre présence a été enregistrée avec succès!
+//               </Alert>
+//             )}
+//             {activeSession ? (
+//               <TableContainer component={Paper}>
+//                 <Table>
+//                   <TableHead sx={{ backgroundColor: "#2E3B55" }}>
+//                     <TableRow>
+//                       <TableCell sx={{ color: "white" }}>Date</TableCell>
+//                       <TableCell sx={{ color: "white" }}>
+//                         Heure de début
+//                       </TableCell>
+//                       <TableCell sx={{ color: "white" }}>
+//                         Heure de fin
+//                       </TableCell>
+//                       <TableCell sx={{ color: "white" }}>Matière</TableCell>
+//                       <TableCell sx={{ color: "white" }}>
+//                         Document de matière
+//                       </TableCell>
+//                       <TableCell sx={{ color: "white" }}>Présence</TableCell>
+//                     </TableRow>
+//                   </TableHead>
+//                   <TableBody>
+//                     <TableRow>
+//                       <TableCell>
+//                         {new Date(activeSession.date).toLocaleDateString(
+//                           "fr-FR"
+//                         )}
+//                       </TableCell>
+//                       <TableCell>{activeSession.start_time}</TableCell>
+//                       <TableCell>{activeSession.end_time}</TableCell>
+//                       <TableCell>
+//                         {activeSession.cour?.title || "Matière non trouvée"}
+//                       </TableCell>
+//                       <TableCell>
+//                         <Link
+//                           href={`http://localhost:1337/api{/uploads/553_1_ca9dbfdcfa.pdf}`}
+//                           rel={activeSession.cour?.title}
+//                           passHref
+//                         >
+//                           📄 Télécharger : {activeSession.cour?.title}
+//                         </Link>
+//                       </TableCell>
+//                       <TableCell>
+//                         {activeSession.time_presence
+//                           ? activeSession.time_presence
+//                           : "Non enregistrée"}
+//                       </TableCell>
+//                     </TableRow>
+//                   </TableBody>
+//                 </Table>
+//               </TableContainer>
+//             ) : (
+//               <Alert severity="info">Aucune séance active trouvée.</Alert>
+//             )}
+//           </Box>
+//         )}
+//       </Box>
+//     </Box>
+//   );
+// }

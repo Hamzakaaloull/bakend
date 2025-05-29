@@ -1,0 +1,309 @@
+// src/app/teacher/page.js
+"use client";
+import { useEffect, useState } from "react";
+import {
+  Box,
+  Typography,
+  List,
+  ListItem,
+  ListItemText,
+  ListItemIcon,
+  Divider,
+  Paper,
+  Table,
+  TableBody,
+  TableCell,
+  TableContainer,
+  TableHead,
+  TableRow,
+  Button,
+  Alert,
+} from "@mui/material";
+import {
+  Home as HomeIcon,
+  EventNote as EventNoteIcon,
+  ContactsOutlined,
+} from "@mui/icons-material";
+import { useRouter } from "next/navigation";
+import Link from "next/link";
+
+export default function TeacherPage() {
+  const [menuOption, setMenuOption] = useState("home");
+  const [teacherInfo, setTeacherInfo] = useState(null);
+  const [activeSession, setActiveSession] = useState(null);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    const token = localStorage.getItem("token");
+    if (!token) router.push("/login");
+    else {
+      fetchTeacherData(token);
+      checkAndUpdateActiveSession(token);
+    }
+  }, []);
+
+  // جلب بيانات المعلم مع جميع الحقول
+  const fetchTeacherData = async (token) => {
+    try {
+      const response = await fetch(
+        "http://localhost:1337/api/users/me?populate=role", // تأكد من تحميل الدور
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+      const data = await response.json();
+      setTeacherInfo(data);
+    } catch (error) {
+      console.error("Erreur lors de la récupération des données:", error);
+    }
+  };
+
+  // التحقق من الجلسة النشطة وتسجيل وقت الحضور
+  const checkAndUpdateActiveSession = async (token) => {
+    try {
+      const now = new Date();
+      const today = now.toISOString().split("T")[0];
+      const currentTime = now.toTimeString().split(" ")[0];
+      console.log(now);
+      // تحديث معلمة populate لتحميل العلاقة مع cour بشكل صحيح
+      const response = await fetch(
+        `http://localhost:1337/api/seances?filters[date][$eq]=${today}&populate[cour][populate][0]=cour_contant`, // استخدام populate=cour
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const data = await response.json();
+      console.log("Données des sessions:", data);
+
+      if (data.error) {
+        console.error("Erreur Strapi:", data.error);
+        return;
+      }
+
+      // البحث عن الجلسة النشطة
+      const session = data.data.find((s) => {
+        const startTime = new Date(`${s.date}T${s.start_time}`);
+        const endTime = new Date(`${s.date}T${s.end_time}`);
+        return now >= startTime && now <= endTime;
+      });
+      console.log(now.toISOString().split("T")[1].split("Z")[0]);
+
+      if (session) {
+        setActiveSession(session);
+
+        // تنسيق الوقت لـ time_presence (HH:mm)
+        const formattedTime = now.toISOString().split("T")[1].split("Z")[0];
+
+        // تحديث الجلسة مع تسجيل وقت الحضور
+        const updateResponse = await fetch(
+          `http://localhost:1337/api/seances/${session.documentId}`,
+          {
+            method: "PUT",
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              data: {
+                time_presence: formattedTime,
+              },
+            }),
+          }
+        );
+        const updateData = await updateResponse.json();
+
+        if (updateResponse.ok) {
+          setShowSuccess(true);
+          console.log(updateData);
+          console.log("Présence enregistrée avec succès!");
+        } else {
+          console.error(
+            "Erreur lors de la mise à jour:",
+            updateResponse.statusText
+          );
+        }
+      }
+    } catch (error) {
+      console.error("Erreur globale:", error);
+    }
+  };
+
+  return (
+    <Box sx={{ display: "flex", minHeight: "100vh" }}>
+      {/* القائمة الجانبية */}
+      <Box
+        sx={{
+          width: 280,
+          backgroundColor: "#2E3B55",
+          color: "white",
+          boxShadow: "2px 0 5px rgba(0,0,0,0.1)",
+          position: "fixed",
+          left: 0,
+          top: 0,
+          bottom: 0,
+        }}
+      >
+        <Typography
+          variant="h5"
+          sx={{
+            textAlign: "center",
+            mt: 3,
+            mb: 4,
+            fontWeight: "bold",
+            color: "#BBDEFB",
+          }}
+        >
+          Tableau de bord
+        </Typography>
+        <List>
+          <ListItem
+            button={`true`}
+            selected={menuOption === "home"}
+            onClick={() => setMenuOption("home")}
+            sx={{
+              "&.Mui-selected": { backgroundColor: "#42A5F5" },
+              borderRadius: "8px",
+              mx: 2,
+              mb: 1,
+            }}
+          >
+            <ListItemIcon sx={{ color: "white" }}>
+              <HomeIcon />
+            </ListItemIcon>
+            <ListItemText primary="Accueil" />
+          </ListItem>
+          <ListItem
+            button={`true`}
+            selected={menuOption === "seance"}
+            onClick={() => setMenuOption("seance")}
+            sx={{
+              "&.Mui-selected": { backgroundColor: "#42A5F5" },
+              borderRadius: "8px",
+              mx: 2,
+              mb: 1,
+            }}
+          >
+            <ListItemIcon sx={{ color: "white" }}>
+              <EventNoteIcon />
+            </ListItemIcon>
+            <ListItemText primary="Séances" />
+          </ListItem>
+        </List>
+      </Box>
+
+      {/* المحتوى الرئيسي */}
+      <Box
+        component="main"
+        sx={{
+          flexGrow: 1,
+          p: 4,
+          ml: "280px",
+          backgroundColor: "#F5F5F5",
+          minHeight: "100vh",
+        }}
+      >
+        {/* صفحة "الرئيسية" */}
+        {menuOption === "home" && teacherInfo && (
+          <Paper
+            elevation={3}
+            sx={{
+              p: 4,
+              borderRadius: "16px",
+              backgroundColor: "#FFFFFF",
+              mb: 4,
+            }}
+          >
+            <Typography variant="h4" sx={{ mb: 3, color: "#2E3B55" }}>
+              Informations Personnelles
+            </Typography>
+            <Box sx={{ display: "flex", flexDirection: "column", gap: 2 }}>
+              <Typography>
+                <strong>Nom d'utilisateur:</strong> {teacherInfo.username}
+              </Typography>
+              <Typography>
+                <strong>Email:</strong> {teacherInfo.email}
+              </Typography>
+              <Typography>
+                <strong>Rôle:</strong>{" "}
+                {teacherInfo.role?.name || "Non spécifié"}
+              </Typography>
+              <Typography>
+                <strong>Date de création:</strong>{" "}
+                {new Date(teacherInfo.createdAt).toLocaleDateString("fr-FR")}
+              </Typography>
+              <Typography>
+                <strong>Dernière mise à jour:</strong>{" "}
+                {new Date(teacherInfo.updatedAt).toLocaleDateString("fr-FR")}
+              </Typography>
+            </Box>
+          </Paper>
+        )}
+
+        {/* صفحة "الجلسات" */}
+        {menuOption === "seance" && (
+          <Box>
+            <Typography variant="h4" sx={{ mb: 4, color: "#2E3B55" }}>
+              Séance Active
+            </Typography>
+            {showSuccess && (
+              <Alert severity="success" sx={{ mb: 4 }}>
+                Votre présence a été enregistrée avec succès!
+              </Alert>
+            )}
+            {activeSession ? (
+              <TableContainer component={Paper}>
+                <Table>
+                  <TableHead sx={{ backgroundColor: "#2E3B55" }}>
+                    <TableRow>
+                      <TableCell sx={{ color: "white" }}>Date</TableCell>
+                      <TableCell sx={{ color: "white" }}>
+                        Heure de début
+                      </TableCell>
+                      <TableCell sx={{ color: "white" }}>
+                        Heure de fin
+                      </TableCell>
+                      <TableCell sx={{ color: "white" }}>Matière</TableCell>
+                      <TableCell sx={{ color: "white" }}>
+                        Document de matière
+                      </TableCell>
+                      <TableCell sx={{ color: "white" }}>Présence</TableCell>
+                    </TableRow>
+                  </TableHead>
+                  <TableBody>
+                    <TableRow>
+                      <TableCell>
+                        {new Date(activeSession.date).toLocaleDateString(
+                          "fr-FR"
+                        )}
+                      </TableCell>
+                      <TableCell>{activeSession.start_time}</TableCell>
+                      <TableCell>{activeSession.end_time}</TableCell>
+                      <TableCell>
+                        {activeSession.cour?.title || "Matière non trouvée"}
+                      </TableCell>
+                      <TableCell>
+                        <Link
+                          href={`http://localhost:1337/${activeSession.cour.cour_contant.url}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          📄 Télécharger : {activeSession.cour.title}
+                        </Link>
+                      </TableCell>
+                      <TableCell>
+                        {activeSession.time_presence
+                          ? activeSession.time_presence
+                          : "Non enregistrée"}
+                      </TableCell>
+                    </TableRow>
+                  </TableBody>
+                </Table>
+              </TableContainer>
+            ) : (
+              <Alert severity="info">Aucune séance active trouvée.</Alert>
+            )}
+          </Box>
+        )}
+      </Box>
+    </Box>
+  );
+}

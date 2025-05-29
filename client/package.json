@@ -1,0 +1,41 @@
+{
+  "name": "client",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint"
+  },
+  "dependencies": {
+    "@dotlottie/react-player": "^1.6.19",
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.0",
+    "@fontsource/great-vibes": "^5.2.5",
+    "@lottiefiles/dotlottie-react": "^0.13.5",
+    "@lottiefiles/react-lottie-player": "^3.6.0",
+    "@mui/icons-material": "^7.1.0",
+    "@mui/material": "^7.1.0",
+    "@mui/x-date-pickers": "^8.2.0",
+    "axios": "^1.8.4",
+    "date-fns": "^4.1.0",
+    "framer-motion": "^12.9.2",
+    "jwt-decode": "^4.0.0",
+    "lottie-react": "^2.4.1",
+    "luxon": "^3.6.1",
+    "next": "15.3.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "react-toastify": "^11.0.5"
+  },
+  "devDependencies": {
+    "@eslint/eslintrc": "^3",
+    "@tailwindcss/postcss": "^4",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^9",
+    "eslint-config-next": "15.3.0",
+    "postcss": "^8.5.3",
+    "tailwindcss": "^4.1.3"
+  }
+}
