@@ -1,4 +1,5 @@
 "use client";
+import { useRouter } from "next/navigation";  
 import { useEffect, useState } from "react";
 import {
   Box,
@@ -30,12 +31,12 @@ import { useTheme } from "@mui/material/styles";
 
 export default function Seances({
   activeSession,
-  
   setActiveSession,
   loadingSession,
   collapseOpen,
   setCollapseOpen,
 }) {
+  const router = useRouter(); 
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down("md"));
   const [appeleInput, setAppeleInput] = useState(activeSession?.Appele || "");
@@ -46,6 +47,12 @@ export default function Seances({
     message: "",
     severity: "success",
   });
+
+const handleLogout = () => {
+    localStorage.removeItem("token");
+    router.push("/login");   // أو المسار الذي تريد الانتقال إليه بعد الخروج
+  };
+
 
   // Sync input with activeSession changes
   useEffect(() => {
@@ -335,6 +342,7 @@ export default function Seances({
           </Box>
         </>
       ) : (
+        
         <Alert
           severity="info"
           sx={{
@@ -345,8 +353,10 @@ export default function Seances({
         >
           Aucune séance active trouvée.
         </Alert>
-      )}
-
+        
+      )
+      }
+ 
       {/* Snackbar Notifications */}
       <Snackbar
         open={snackbar.open}

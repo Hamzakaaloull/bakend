@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Box, useTheme, Typography, List, ListItem, ListItemText, CircularProgress } from "@mui/material";
+import { Box, useTheme, Typography, List, ListItem, ListItemText, CircularProgress , Button  } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { useRouter } from "next/navigation";
 import SideMenu from "./components/SideMenu";
@@ -257,9 +257,22 @@ export default function TeacherPage() {
                 ))}
               </List>
             ) : (
+              <>
               <Typography variant="body1" sx={{ mb: 3, textAlign: "center" }}>
                 Aucune séance prévue aujourd'hui
               </Typography>
+               <Button
+      variant="contained"
+      color="secondary"
+      onClick={handleLogout}
+      sx={{ mt: 1 , width: "100%", display: "block" }}
+      disabled={isLoading}
+      startIcon={<i className="fas fa-sign-out-alt"></i>} 
+              
+    >
+      Logout
+    </Button>
+    </>
             )}
           </Box>
         </Box>

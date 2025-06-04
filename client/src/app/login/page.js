@@ -202,12 +202,19 @@ export default function LoginPage() {
               variant="contained"
               size="large"
               disabled={loading}
-              sx={{ mt: 3, py: 1.5, borderRadius: 2, fontSize: "1rem" }}
+              sx={{
+                 mt: 3, py: 1.5, borderRadius: 2, fontSize: "1rem" 
+
+              }}
+              color="primary"
+              disableElevation
+             
             >
               {loading ? (
-                <CircularProgress size={24} color="inherit" />
+                <CircularProgress size={24} color="inherit"    />
               ) : (
                 "Se connecter"
+
               )}
             </Button>
 
