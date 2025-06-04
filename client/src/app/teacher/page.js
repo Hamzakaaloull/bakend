@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Box, useTheme, useMediaQuery } from "@mui/material";
+import { Box, useTheme, Typography, List, ListItem, ListItemText, CircularProgress } from "@mui/material";
 import { createTheme, ThemeProvider } from "@mui/material/styles";
 import { useRouter } from "next/navigation";
 import SideMenu from "./components/SideMenu";
@@ -21,6 +21,8 @@ export default function TeacherPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const theme = useTheme();
+  const [todaysSessions, setTodaysSessions] = useState([]);
+  const [hasActiveSession, setHasActiveSession] = useState(false);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -39,10 +41,9 @@ export default function TeacherPage() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await res.json();
-      console.log("this is teacher info ", data);
       setTeacherInfo(data);
 
-      // fetch the statu of the user and update it
+      // Mettre à jour le statut de l'utilisateur
       const req = await fetch(`${API_URL}/api/user-statuses/`, {
         method: "POST",
         headers: {
@@ -58,13 +59,11 @@ export default function TeacherPage() {
         }),
       });
       const dataReq = await req.json();
-      // save the statu of the user
       setStatu(dataReq.data);
       setTeacherInfo((prev) => ({
         ...prev,
         user_status: dataReq.data,
       }));
-      console.log("Updated status on login:", dataReq.data);
     } catch (err) {
       console.error(err);
     } finally {
@@ -82,16 +81,20 @@ export default function TeacherPage() {
         { headers: { Authorization: `Bearer ${token}` } }
       );
       const data = await res.json();
-      console.log("this is seances ", data);
-      console.log(data);
+      
+      // Stocker toutes les séances d'aujourd'hui
+      setTodaysSessions(data.data || []);
+      
       if (!data.error) {
         const session = data.data.find((s) => {
           const start = new Date(`${s.date}T${s.start_time}`);
           const end = new Date(`${s.date}T${s.end_time}`);
           return now >= start && now <= end;
         });
+        
         if (session) {
           setActiveSession(session);
+          setHasActiveSession(true);
           const formattedTime = now.toISOString().split("T")[1].split("Z")[0];
           const upd = await fetch(
             `${API_URL}/api/seances/${session.documentId}`,
@@ -104,12 +107,15 @@ export default function TeacherPage() {
               body: JSON.stringify({ data: { time_presence: formattedTime } }),
             }
           );
-          const dataupd = await upd.json();
-          console.log(dataupd);
+        } else {
+          setHasActiveSession(false);
         }
+      } else {
+        setHasActiveSession(false);
       }
     } catch (err) {
       console.error(err);
+      setHasActiveSession(false);
     } finally {
       setLoadingSession(false);
     }
@@ -120,7 +126,7 @@ export default function TeacherPage() {
     const token = localStorage.getItem("token");
     const statusDocId = statu?.documentId;
     const userId = teacherInfo?.id;
-    // update the satete of the user
+    
     if (token && statusDocId) {
       try {
         await fetch(`${API_URL}/api/user-statuses/${statusDocId}`, {
@@ -136,13 +142,9 @@ export default function TeacherPage() {
             },
           }),
         });
-        console.log("✅ user-status updated to offline");
-      } catch (err) {
-        console.error("Error updating user-status:", err);
-      }
+      } catch (err) {}
     }
 
-    // 2. update isActive في Users-Permissions
     if (token && userId) {
       try {
         await fetch(`${API_URL}/api/users/${userId}`, {
@@ -155,16 +157,117 @@ export default function TeacherPage() {
             isActive: false,
           }),
         });
-        console.log("✅ user.isActive updated to false");
-      } catch (err) {
-        console.error("Error updating user.isActive:", err);
-      }
+      } catch (err) {}
     }
-    // 3. delete the token and puch to login
+    
     localStorage.removeItem("token");
     router.push("/login");
   };
 
+  // Afficher le chargement pendant le traitement
+  if (loadingSession || loadingTeacher) {
+    return (
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          alignItems: "center",
+          height: "100vh",
+        }}
+      >
+        <CircularProgress />
+      </Box>
+    );
+  }
+
+  // Si aucune séance active n'est trouvée
+  if (!hasActiveSession) {
+    return (
+      <ThemeProvider theme={theme}>
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            minHeight: "100vh",
+            bgcolor: "background.default",
+            p: 4,
+          }}
+        >
+          <Box
+            sx={{
+              bgcolor: "background.paper",
+              p: 4,
+              borderRadius: 2,
+              boxShadow: 3,
+              maxWidth: 600,
+              width: "100%",
+            }}
+          >
+           <Typography variant="h5" sx={{ mb: 1, textAlign: "center", color: "primary.main" }}>
+               Séances prévues aujourd'hui
+             </Typography>
+          <Typography
+            variant="body2"
+            sx={{
+              textAlign: "center",
+              color: "text.secondary",
+              opacity: 0.5,
+              fontStyle: "italic",
+              maxWidth: "600px",
+              mx: "auto",
+              my: 1,
+            }}
+          >
+            Vous n’avez pas le droit de vous connecter si aucune séance active n’est prévue pour aujourd’hui.
+          </Typography>
+
+             
+            {todaysSessions.length > 0 ? (
+              <List
+                sx={{
+                  border: "1px solid #e0e0e0",
+                  borderRadius: 2,
+                  maxHeight: 400,
+                  overflow: "auto",
+                }}
+              >
+                {todaysSessions.map((session) => (
+                  <ListItem key={session.id} divider>
+                    <ListItemText
+                      primary={session.cour?.title || "Matière inconnue"}
+                      secondary={
+                        // Correction : Utilisation de fragments et de spans
+                        <>
+                          <Typography component="span" variant="body2" display="block">
+                            Date: {new Date(session.date).toLocaleDateString("fr-FR")}
+                          </Typography>
+                          <Typography component="span" variant="body2" display="block">
+                            Heure: {session.start_time} - {session.end_time}
+                          </Typography>
+                          {session.brigade && (
+                            <Typography component="span" variant="body2" display="block">
+                              Brigade: {session.brigade.nom}
+                            </Typography>
+                          )}
+                        </>
+                      }
+                    />
+                  </ListItem>
+                ))}
+              </List>
+            ) : (
+              <Typography variant="body1" sx={{ mb: 3, textAlign: "center" }}>
+                Aucune séance prévue aujourd'hui
+              </Typography>
+            )}
+          </Box>
+        </Box>
+      </ThemeProvider>
+    );
+  }
+
+  // Si une séance active existe, afficher l'interface normale
   return (
     <ThemeProvider theme={theme}>
       {isLoading && <LoadingIn />}
@@ -203,6 +306,7 @@ export default function TeacherPage() {
               setCollapseOpen={setCollapseOpen}
             />
           )}
+
           {teacherInfo && activeSession && (
             <ActivityTracker
               sessionId={activeSession.documentId}

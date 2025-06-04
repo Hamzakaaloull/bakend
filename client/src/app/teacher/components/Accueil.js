@@ -120,16 +120,7 @@ export default function Accueil({ teacherInfo, loadingTeacher }) {
           value={teacherInfo.specialty?.nom}
           gradient="linear-gradient(135deg, #e3ffe7 0%, #d9e7ff 100%)"
             />
-<InfoCard
-       icon={
-            <GroupsIcon
-              sx={{ color: theme.palette.success.main, fontSize: 32 }}
-            />
-              }
-          label="Speciality"
-          value={teacherInfo.isActive? "you are actif" : "move you mouse"}
-          gradient="linear-gradient(135deg, #e3ffe7 0%, #d9e7ff 100%)"
-            />
+
 
             <InfoCard
               icon={

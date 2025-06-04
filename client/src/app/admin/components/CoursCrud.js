@@ -113,9 +113,13 @@ export default function CoursCrud() {
     });
 
     if (!res.ok) {
-      const errorData = await res.json();
-      throw new Error(errorData.error?.message || "Échec de l'upload des fichiers");
-    }
+  const errorData = await res.json();
+  // استخراج رسالة الخطأ من الهيكل الصحيح
+  const errorMsg = errorData?.error?.message 
+    || errorData?.message?.[0]?.messages?.[0]?.message 
+    || "Échec de l'upload des fichiers";
+  throw new Error(errorMsg);
+}
 
     const uploadedFiles = await res.json();
     // Strapi upload plugin returns objects with `id`

@@ -115,8 +115,9 @@ export default function LoginPage() {
 
       const roleName = userData.role?.name;
       setTimeout(() => {
-        if (roleName === "teacher") router.push("/teacher");
-        else router.push("/admin");
+        if (roleName === "admin" || roleName === "manger") {
+          router.push("/admin");
+        }else router.push("/teacher");
       }, 800);
     } catch (err) {
       setError("Erreur de connexion au serveur.");

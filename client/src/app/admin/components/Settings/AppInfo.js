@@ -34,7 +34,7 @@ export default function AppInfo() {
   const API_URL = process.env.NEXT_PUBLIC_STRAPI_API_URL;
   const [info, setInfo] = useState(null);
   const [editingField, setEditingField] = useState(null);
-  const [form, setForm] = useState({ appName: "", logo: null });
+  const [form, setForm] = useState({ name: "", logo: null });
   const [loading, setLoading] = useState({ global: false, submit: false });
   const [confirmDialog, setConfirmDialog] = useState({ open: false, field: null });
   const [snackbar, setSnackbar] = useState({ open: false, message: "", severity: "success" });
@@ -59,7 +59,7 @@ export default function AppInfo() {
       } else {
         setInfo(item);
         setForm({
-          appName: item.appName || "",
+          name: item.name || "",
           logo: item.logo?.[0]?.url || null,
         });
       }
@@ -235,24 +235,24 @@ export default function AppInfo() {
                 {/* Nom de l'application */}
                 <Stack direction="row" alignItems="center" spacing={2}>
                   <LockIcon />
-                  {editingField === "appName" ? (
+                  {editingField === "name" ? (
                     <TextField
                       size="small"
-                      value={form.appName}
-                      onChange={e => handleChange("appName", e.target.value)}
+                      value={form.name}
+                      onChange={e => handleChange("name", e.target.value)}
                       sx={{ minWidth: 250, borderRadius: 3 }}
                     />
                   ) : (
                     <Typography sx={{ flex: 1, fontWeight: 400 }}>
-                      Nom de l'application: {info.appName}
+                      Nom de l'application: {info.name}
                     </Typography>
                   )}
-                  {editingField === "appName" ? (
+                  {editingField === "name" ? (
                     <IconButton onClick={closeEditor}>
                       <CancelIcon />
                     </IconButton>
                   ) : (
-                    <IconButton onClick={() => openEditor("appName")}>
+                    <IconButton onClick={() => openEditor("name")}>
                       <EditIcon />
                     </IconButton>
                   )}

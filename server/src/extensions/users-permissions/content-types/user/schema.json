@@ -99,6 +99,9 @@
       "relation": "manyToOne",
       "target": "api::specialty.specialty",
       "inversedBy": "users"
+    },
+    "isActive": {
+      "type": "boolean"
     }
   }
 }

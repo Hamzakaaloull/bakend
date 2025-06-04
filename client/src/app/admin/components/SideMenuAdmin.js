@@ -57,7 +57,6 @@ export default function SideMenuAdmin({ menuOption, setMenuOption }) {
 
   const [collapsed, setCollapsed] = useState(false);
   const [appInfo, setAppInfo] = useState({ name: "Portail CIT", logo: null });
-  const [showLogo, setShowLogo] = useState(true);
 
   // جلب بيانات التطبيق
   useEffect(() => {
@@ -79,12 +78,6 @@ export default function SideMenuAdmin({ menuOption, setMenuOption }) {
     };
     fetchAppInfo();
   }, [API_URL]);
-
-  // تبديل الشعار/الاسم
-  useEffect(() => {
-    const iv = setInterval(() => setShowLogo((p) => !p), 5000);
-    return () => clearInterval(iv);
-  }, []);
 
   // تأكد من وجود التوكن
   useEffect(() => {
@@ -216,68 +209,34 @@ export default function SideMenuAdmin({ menuOption, setMenuOption }) {
         {!collapsed && (
           <Box
             sx={{
-              position: "relative",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
               width: 180,
               height: 70,
-              perspective: 1000,
-              overflow: "hidden",
             }}
           >
-            {/* Name */}
+            {/* Logo Only */}
             <Box
-              sx={{
-                position: "absolute",
-                inset: 0, // يغطي المكان بالكامل
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                transform: showLogo ? "rotateX(90deg)" : "none",
-                opacity: showLogo ? 0 : 1,
-                transition: "transform 0.6s ease, opacity 0.6s ease",
-                transformOrigin: "bottom center",
+              component="img"
+              src={
+                appInfo.logo
+                  ? `${API_URL}${appInfo.logo.startsWith("/") ? "" : "/"}${
+                      appInfo.logo
+                    }`
+                  : undefined
+              }
+              sx={{ 
+                width: "auto", 
+                height: "80%", 
+                objectFit: "contain",
+                maxWidth: "100%",
+                maxHeight: "100%",
+                mr: 15,
+                display: "block",
               }}
-            >
-              <Typography
-                sx={{
-                  maxWidth: "70%",
-                  fontFamily: '"Great Vibes", cursive', // يمكنك تغييره لأي خط تفضّله
-                  fontSize: "0,5rem", // حجم متوازن وبسيط
-                  color: "#000", // أسود نقي
-                  marginRight: 8, // إزالة أي هوامش إضافية
-                  userSelect: "none",
-                }}
-              >
-                {appInfo.name}
-              </Typography>
-            </Box>
-
-            {/* Logo */}
-            <Box
-              sx={{
-                position: "absolute",
-                width: "100%",
-                height: "100%",
-                display: "flex",
-                alignItems: "center",
-                transform: `rotateX(${showLogo ? "0deg" : "-90deg"})`,
-                opacity: showLogo ? 1 : 0,
-                transition: "all 0.6s cubic-bezier(0.4, 0, 0.2, 1)",
-                transformOrigin: "top center",
-              }}
-            >
-              <Box
-                component="img"
-                src={
-                  appInfo.logo
-                    ? `${API_URL}${appInfo.logo.startsWith("/") ? "" : "/"}${
-                        appInfo.logo
-                      }`
-                    : undefined
-                }
-                sx={{ width: "auto", height: "80%", objectFit: "contain" }}
-                alt="App Logo"
-              />
-            </Box>
+              alt="App Logo"
+            />
           </Box>
         )}
         <IconButton

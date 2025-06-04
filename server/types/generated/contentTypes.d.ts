@@ -566,7 +566,10 @@ export interface ApiSeanceSeance extends Struct.CollectionTypeSchema {
       'manyToOne',
       'plugin::users-permissions.user'
     >;
-    userPhoto: Schema.Attribute.Media<'images' | 'files' | 'videos' | 'audios'>;
+    userPhoto: Schema.Attribute.Media<
+      'images' | 'files' | 'videos' | 'audios',
+      true
+    >;
   };
 }
 
@@ -1109,6 +1112,7 @@ export interface PluginUsersPermissionsUser
     imgProfile: Schema.Attribute.Media<
       'images' | 'files' | 'videos' | 'audios'
     >;
+    isActive: Schema.Attribute.Boolean;
     locale: Schema.Attribute.String & Schema.Attribute.Private;
     localizations: Schema.Attribute.Relation<
       'oneToMany',
