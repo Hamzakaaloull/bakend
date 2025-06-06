@@ -1,804 +1,388 @@
 "use client";
-import React, { useState, useEffect, useMemo } from "react";
-import useUser from "../../hooks/useUser";
+import React, { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Box,
-  Button,
-  Paper,
-  Table,
-  TableHead,
-  TableBody,
-  TableRow,
-  TableCell,
-  Select,
-  MenuItem,
-  FormControl,
-  InputLabel,
+  List,
+  ListItem,
+  ListItemIcon,
+  ListItemText,
+  Divider,
   Typography,
-  TextField,
-  Stack,
-  CircularProgress,
-  Snackbar,
-  Alert,
-  Dialog,
-  DialogTitle,
-  DialogContent,
-  DialogActions,
+  Avatar,
+  IconButton,
+  Tooltip,
+  ListItemButton,
 } from "@mui/material";
-import { motion, AnimatePresence } from "framer-motion";
+import {
+  People,
+  School,
+  MeetingRoom,
+  MenuBook,
+  Settings as SettingsIcon,
+  Logout as LogoutIcon,
+  TrendingUp as TrendingUpIcon,
+  History as HistoryIcon,
+  BrandingWatermark,
+  ChevronLeft,
+  Menu as MenuIcon,
+} from "@mui/icons-material";
+import { alpha, useTheme } from "@mui/material/styles";
+import "@fontsource/great-vibes";
+import useUser from "../../hooks/useUser";
+import LoadingIn from "../../hooks/LoadingIn";
 
-const MotionTableRow = motion(TableRow);
+const menuItems = [
+  { key: "users", icon: <People />, label: "Utilisateurs" },
+  { key: "specialty", icon: <BrandingWatermark />, label: "Spécialités" },
+  { key: "brigades", icon: <School />, label: "Brigades" },
+  { key: "salles", icon: <MeetingRoom />, label: "Salles" },
+  { key: "cours", icon: <MenuBook />, label: "Cours" },
+  {
+    key: "progression",
+    icon: <TrendingUpIcon />,
+    label: "Créer Progression",
+  },
+  { key: "historique", icon: <HistoryIcon />, label: "Historique" },
+  { key: "settings", icon: <SettingsIcon />, label: "Settings" },
+];
 
-function SlotHeader({ slot }) {
-  return (
-    <TableCell align="center">
-      {slot.start}–{slot.end}
-    </TableCell>
-  );
-}
-
-function BrigadeRow({
-  brigade,
-  stageRowSpan,
-  customSlots,
-  viewMode,
-  selection,
-  handleChange,
-  rowErrors,
-  seances,
-  editedSeances,
-  handleEditChange,
-  courseList,
-  salleList,
-  userList,
+export default function SideMenuAdmin({
+  menuOption,
+  setMenuOption,
+  collapsed,
+  setCollapsed,
 }) {
-  return (
-    <MotionTableRow
-      key={brigade.id}
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-    >
-      {stageRowSpan > 0 && (
-        <TableCell rowSpan={stageRowSpan} align="center">
-          {brigade.stage}
-        </TableCell>
-      )}
-      <TableCell>{brigade.nom}</TableCell>
-      {customSlots.map((slot, idx) => {
-        const cellShow = seances.find(
-          (s) =>
-            s.brigadeId === brigade.id && s.start_time === slot.start
-        );
-        const editIdx = editedSeances.findIndex(
-          (s) => s.brigadeId === brigade.id && s.start_time === slot.start
-        );
-        return (
-          <TableCell key={idx}>
-            {viewMode === "create" && (
-              <Stack spacing={1}>
-                <FormControl
-                  size="small"
-                  fullWidth
-                  error={!!rowErrors[`${brigade.id}-${idx}-course`]}
-                >
-                  <InputLabel>المادة</InputLabel>
-                  <Select
-                    label="المادة"
-                    value={selection[brigade.id]?.[idx]?.course || ""}
-                    onChange={(e) =>
-                      handleChange(brigade.id, idx, "course", e.target.value)
-                    }
-                  >
-                    <MenuItem value="">—</MenuItem>
-                    {courseList.map((c) => (
-                      <MenuItem key={c.id} value={c.id}>
-                        {c.title}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <FormControl
-                  size="small"
-                  fullWidth
-                  error={!!rowErrors[`${brigade.id}-${idx}-salle`]}
-                >
-                  <InputLabel>القاعة</InputLabel>
-                  <Select
-                    label="القاعة"
-                    value={selection[brigade.id]?.[idx]?.salle || ""}
-                    onChange={(e) =>
-                      handleChange(brigade.id, idx, "salle", e.target.value)
-                    }
-                  >
-                    <MenuItem value="">—</MenuItem>
-                    {salleList.map((sal) => (
-                      <MenuItem key={sal.id} value={sal.id}>
-                        {sal.nom}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <FormControl
-                  size="small"
-                  fullWidth
-                  error={!!rowErrors[`${brigade.id}-${idx}-user`]}
-                >
-                  <InputLabel>الأستاذ</InputLabel>
-                  <Select
-                    label="الأستاذ"
-                    value={selection[brigade.id]?.[idx]?.user || ""}
-                    onChange={(e) =>
-                      handleChange(brigade.id, idx, "user", e.target.value)
-                    }
-                  >
-                    <MenuItem value="">—</MenuItem>
-                    {userList.map((u) => (
-                      <MenuItem key={u.id} value={u.id}>
-                        {u.username || u.email}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Stack>
-            )}
-            {viewMode === "show" && cellShow && (
-              <Stack spacing={0.5}>
-                <Typography variant="caption">
-                  {cellShow.courseTitle}
-                </Typography>
-                <Typography variant="caption">
-                  {cellShow.salleName}
-                </Typography>
-                <Typography variant="caption">
-                  {cellShow.userName}
-                </Typography>
-              </Stack>
-            )}
-            {viewMode === "edit" && editIdx > -1 && (
-              <Stack spacing={1}>
-                <TextField
-                  type="time"
-                  fullWidth
-                  size="small"
-                  value={editedSeances[editIdx].start_time}
-                  onChange={(e) =>
-                    handleEditChange(editIdx, "start_time", e.target.value)
-                  }
-                />
-                <TextField
-                  type="time"
-                  fullWidth
-                  size="small"
-                  value={editedSeances[editIdx].end_time}
-                  onChange={(e) =>
-                    handleEditChange(editIdx, "end_time", e.target.value)
-                  }
-                />
-                <FormControl size="small" fullWidth>
-                  <InputLabel>القاعة</InputLabel>
-                  <Select
-                    label="القاعة"
-                    value={editedSeances[editIdx].salleId || ""}
-                    onChange={(e) =>
-                      handleEditChange(editIdx, "salleId", e.target.value)
-                    }
-                  >
-                    <MenuItem value="">—</MenuItem>
-                    {salleList.map((sal) => (
-                      <MenuItem key={sal.id} value={sal.id}>
-                        {sal.nom}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <FormControl size="small" fullWidth>
-                  <InputLabel>المادة</InputLabel>
-                  <Select
-                    label="المادة"
-                    value={editedSeances[editIdx].courseId || ""}
-                    onChange={(e) =>
-                      handleEditChange(editIdx, "courseId", e.target.value)
-                    }
-                  >
-                    <MenuItem value="">—</MenuItem>
-                    {courseList.map((c) => (
-                      <MenuItem key={c.id} value={c.id}>
-                        {c.title}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-                <FormControl size="small" fullWidth>
-                  <InputLabel>الأستاذ</InputLabel>
-                  <Select
-                    label="الأستاذ"
-                    value={editedSeances[editIdx].userId || ""}
-                    onChange={(e) =>
-                      handleEditChange(editIdx, "userId", e.target.value)
-                    }
-                  >
-                    <MenuItem value="">—</MenuItem>
-                    {userList.map((u) => (
-                      <MenuItem key={u.id} value={u.id}>
-                        {u.username || u.email}
-                      </MenuItem>
-                    ))}
-                  </Select>
-                </FormControl>
-              </Stack>
-            )}
-          </TableCell>
-        );
-      })}
-    </MotionTableRow>
-  );
-}
-
-export default function CreerProgression() {
-  const { brigades, salles, userData, courses, loading, error } = useUser();
+  const theme = useTheme();
+  const router = useRouter();
+  const { myData, setMyData, loading } = useUser();
   const API_URL = process.env.NEXT_PUBLIC_STRAPI_API_URL;
+  const [isLoading, setIsLoading] = useState(false);
 
-  const brigadeList = Array.isArray(brigades?.data) ? brigades.data : [];
-  const salleList = Array.isArray(salles?.data) ? salles.data : [];
-  const userList = Array.isArray(userData) ? userData : [];
-  const courseList = Array.isArray(courses?.data) ? courses.data : [];
- const handleChange = (brId, slotIdx, field, value) => {
-    setSelection((prev) => ({
-      ...prev,
-      [brId]: {
-        ...(prev[brId] || {}),
-        [slotIdx]: {
-          ...(prev[brId]?.[slotIdx] || {}),
-          [field]: value,
-        },
-      },
-    }));
-    setRowErrors((errs) => {
-      const key = `${brId}-${slotIdx}-${field}`;
-      if (errs[key]) {
-        const c = { ...errs };
-        delete c[key];
-        return c;
-      }
-      return errs;
-    });
+  // Build auth header
+  const authHeader = {
+    Authorization: `Bearer ${localStorage.getItem("token")}`,
   };
-  const handleEditChange = (index, field, value) =>
-    setEditedSeances((prev) =>
-      prev.map((s, i) => (i === index ? { ...s, [field]: value } : s))
-    );
-  const [slotsOpen, setSlotsOpen] = useState(false);
-  const [customSlots, setCustomSlots] = useState([
-    { start: "08:00", end: "09:45" },
-    { start: "10:00", end: "12:00" },
-    { start: "13:00", end: "14:30" },
-    { start: "14:40", end: "16:00" },
-  ]);
-  const [viewMode, setViewMode] = useState("create");
-  const [selection, setSelection] = useState({});
-  const [rowErrors, setRowErrors] = useState({});
-  const [submitting, setSubmitting] = useState(false);
-  const [updating, setUpdating] = useState(false);
-  const [seances, setSeances] = useState([]);
-  const [editedSeances, setEditedSeances] = useState([]);
-  const [selectedDate, setSelectedDate] = useState(
-    new Date().toISOString().split("T")[0]
-  );
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success",
-  });
-  const [existsDialog, setExistsDialog] = useState(false);
-  const [currentHistorique, setCurrentHistorique] = useState(null);
 
-  const storageKey = `progression_${selectedDate}`;
+  const [appInfo, setAppInfo] = useState({ name: "Portail CIT", logo: null });
 
-  // جلب الـ historique الحالي لليوم (إن وجد) عند تغيير viewMode إلى show أو edit
+  // Fetch app info (name + logo)
   useEffect(() => {
-    if (viewMode !== "create") {
-      (async () => {
-        try {
-          const token = localStorage.getItem("token");
-          const headers = token ? { Authorization: `Bearer ${token}` } : {};
-          const res = await fetch(
-            `${API_URL}/api/historiques?filters[date][$eq]=${selectedDate}&populate=seances`,
-            { headers }
-          );
-          const json = await res.json();
-          const data = json.data;
-          if (data.length) {
-            setCurrentHistorique(data[0]);
-          } else {
-            setCurrentHistorique(null);
-          }
-        } catch (err) {
-          console.error("خطأ في جلب الـ historique:", err);
-        }
-      })();
-    }
-  }, [viewMode, selectedDate]);
-
-  // عند التحميل: إذا وجدنا جدول لليوم الحالي ننتقل تلقائياً للعرض
-  useEffect(() => {
-    const lp = sessionStorage.getItem("lastProgression");
-    if (lp) {
+    const fetchAppInfo = async () => {
       try {
-        const prog = JSON.parse(lp);
-        if (prog.date === selectedDate) {
-          setViewMode("show");
-        }
-      } catch {}
-    }
-  }, [selectedDate]);
-
-  // استعادة وحفظ حالة الإنشاء
-  useEffect(() => {
-    if (viewMode === "create") {
-      const stored = sessionStorage.getItem(storageKey);
-      if (stored) {
-        const { selection: sel, customSlots: cs } = JSON.parse(stored);
-        setSelection(sel || {});
-        setCustomSlots(cs || customSlots);
-      }
-    }
-  }, [viewMode, selectedDate]);
-
-  useEffect(() => {
-    if (viewMode === "create") {
-      sessionStorage.setItem(
-        storageKey,
-        JSON.stringify({ selection, customSlots })
-      );
-    }
-  }, [selection, customSlots, selectedDate]);
-
-  // جلب الحصص للعرض/التعديل
-  useEffect(() => {
-    if (viewMode !== "create") {
-      (async () => {
-        try {
-          const token = localStorage.getItem("token");
-          const headers = token ? { Authorization: `Bearer ${token}` } : {};
-          const res = await fetch(
-            `${API_URL}/api/seances?filters[date][$eq]=${selectedDate}&populate[brigade]=true&populate[salle]=true&populate[user]=true&populate[cour]=true`,
-            { headers }
-          );
-          const json = await res.json();
-          const items = json.data.map((item) => ({
-            id: item.id,
-            documentId: item.documentId,
-            brigadeId: item.brigade.id,
-            brigadeName: item.brigade.nom,
-            salleId: item.salle?.id,
-            salleName: item.salle?.nom,
-            userId: item.user.id,
-            userName: item.user.username || item.user.email,
-            courseId: item.cour.id,
-            courseTitle: item.cour.title,
-            start_time: item.start_time.slice(0, 5),
-            end_time: item.end_time.slice(0, 5),
-          }));
-          setSeances(items);
-          if (viewMode === "edit") {
-            setEditedSeances(items.map((i) => ({ ...i })));
-          }
-        } catch (err) {
-          console.error(err);
-        }
-      })();
-    }
-  }, [viewMode, selectedDate]);
-
-  // إعداد الحالات عند الدخول لوضعية edit
-  useEffect(() => {
-    if (viewMode === "edit") {
-      setEditedSeances(seances.map((s) => ({ ...s })));
-    }
-  }, [viewMode, seances]);
-
-  // إنشاء الحصص + historique جديد
-  const handleCreate = async () => {
-    // التحقق من وجود جدول مسبقاً
-    const lp = sessionStorage.getItem("lastProgression");
-    if (lp) {
-      try {
-        const prog = JSON.parse(lp);
-        if (prog.date === selectedDate) {
-          return setExistsDialog(true);
-        }
-      } catch {}
-    }
-    // التحقق من تعبئة الحقول
-    const errs = {};
-    brigadeList.forEach((b) =>
-      customSlots.forEach((_, idx) => {
-        const cell = selection[b.id]?.[idx] || {};
-        ["course", "salle", "user"].forEach((f) => {
-          if (!cell[f]) errs[`${b.id}-${idx}-${f}`] = "مطلوب";
+        const res = await fetch(`${API_URL}/api/info-apps?populate=logo`, {
+          headers: authHeader,
         });
-      })
-    );
-    if (Object.keys(errs).length) {
-      setRowErrors(errs);
-      return setSnackbar({
-        open: true,
-        message: "الرجاء ملء جميع الحقول.",
-        severity: "error",
-      });
-    }
+        const { data } = await res.json();
+        if (data?.length) {
+          setAppInfo({
+            name: data[0].appName,
+            logo: data[0].logo?.[0]?.url,
+          });
+        }
+      } catch (err) {
+        console.error("Failed to fetch app info:", err);
+      }
+    };
+    fetchAppInfo();
+  }, [API_URL]);
 
-    setSubmitting(true);
-    try {
-      const token = localStorage.getItem("token");
-      const headers = {
-        "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
-      };
+  // Redirect to login if no token
+  useEffect(() => {
+    if (!localStorage.getItem("token")) router.push("/login");
+  }, [router]);
 
-      // إنشاء كل الحصص
-      const creations = await Promise.all(
-        brigadeList.flatMap((b) =>
-          customSlots.map((slot, idx) => {
-            const sel = selection[b.id][idx];
-            return fetch(`${API_URL}/api/seances`, {
-              method: "POST",
-              headers,
-              body: JSON.stringify({
-                data: {
-                  brigade: b.id,
-                  salle: sel.salle,
-                  user: sel.user,
-                  cour: sel.course,
-                  date: selectedDate,
-                  start_time: slot.start + ":00.000",
-                  end_time: slot.end + ":00.000",
-                  Appele: "",
-                  time_presence: null,
-                },
-              }),
-            }).then((r) => r.json());
-          })
-        )
-      );
-
-      // تجمع معرّفات الحصص المنشأة
-      const createdIds = creations.map((c) => c.data.documentId);
-
-      // إنشاء سجلّ historique جديد مرتبط بهذه الحصص
-      await fetch(`${API_URL}/api/historiques`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
+  // Sync user_status to “online” on mount/update
+  useEffect(() => {
+    if (loading || !myData) return;
+    const syncStatus = async () => {
+      try {
+        const status = myData.user_status;
+        const payload = {
           data: {
-            date: selectedDate,
-            seances: createdIds,
+            isOnline: true,
+            lastSeen: new Date().toISOString(),
+            user: myData.id,
           },
-        }),
-      });
+        };
 
-      // حفظ للتذكّر
-      const prog = {
-        date: selectedDate,
-        seanceIds: createdIds,
-      };
-      sessionStorage.setItem("lastProgression", JSON.stringify(prog));
-
-      setSubmitting(false);
-      setViewMode("show");
-      setSnackbar({
-        open: true,
-        message: "تم إنشاء الحصص والـ historique بنجاح.",
-        severity: "success",
-      });
-    } catch (err) {
-      setSubmitting(false);
-      setSnackbar({
-        open: true,
-        message: "خطأ أثناء الإنشاء: " + err.message,
-        severity: "error",
-      });
-    }
-  };
-
-  // تعديل الحصص + تحديث historique الموجود
-  const handleUpdateConfirm = async () => {
-    if (!currentHistorique) {
-      // لا يمكن التحديث بدون وجود historique مسبق
-      setSnackbar({
-        open: true,
-        message: "لم يتم العثور على سجلّ historique للتحديث.",
-        severity: "error",
-      });
-      return;
-    }
-
-    setUpdating(true);
-    try {
-      const token = localStorage.getItem("token");
-      const headers = {
-        "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
-      };
-
-      // تحديث كل حصة
-      for (let s of editedSeances) {
-        await fetch(`${API_URL}/api/seances/${s.documentId}`, {
-          method: "PUT",
-          headers,
-          body: JSON.stringify({
-            data: {
-              start_time: s.start_time + ":00.000",
-              end_time: s.end_time + ":00.000",
-              salle: s.salleId,
-              cour: s.courseId,
-              user: s.userId,
-              date: selectedDate,
+        if (!status) {
+          const res = await fetch(`${API_URL}/api/user-statuses`, {
+            method: "POST",
+            headers: {
+              ...authHeader,
+              "Content-Type": "application/json",
             },
-          }),
-        });
-      }
-
-      // بعد تعديل الحصص، نجمع معرّفاتهنّ
-      const updatedIds = editedSeances.map((s) => s.id);
-
-      // نحدّث سجلّ historique ليربط مع القائمة الجديدة
-      await fetch(
-        `${API_URL}/api/historiques/${currentHistorique.documentId}`,
-        {
-          method: "PUT",
-          headers,
-          body: JSON.stringify({
-            data: {
-              seances: updatedIds,
-            },
-          }),
+            body: JSON.stringify(payload),
+          });
+          const newStatus = await res.json();
+          setMyData((prev) => ({
+            ...prev,
+            user_status: newStatus.data || newStatus,
+          }));
+        } else if (status.isOnline === false) {
+          const id = status.documentId;
+          const res = await fetch(
+            `${API_URL}/api/user-statuses/${id}`,
+            {
+              method: "PUT",
+              headers: {
+                ...authHeader,
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(payload),
+            }
+          );
+          const updated = await res.json();
+          setMyData((prev) => ({
+            ...prev,
+            user_status: updated.data || updated,
+          }));
         }
-      );
+      } catch (err) {
+        console.error("Error syncing user_status:", err);
+      }
+    };
 
-      setUpdating(false);
-      setViewMode("show");
-      setSnackbar({
-        open: true,
-        message: "تم تحديث الحصص والـ historique بنجاح.",
-        severity: "success",
-      });
+    syncStatus();
+  }, [loading, myData, API_URL]);
+
+  // Debug log
+  useEffect(() => {
+    console.log("🔄 myData in SideMenuAdmin:", myData);
+  }, [myData]);
+
+  // Logout: update user_status → offline, then clear token
+  const handleLogout = async () => {
+    setIsLoading(true);
+    try {
+      const statuId = myData?.user_status?.documentId;
+      if (statuId) {
+        const res = await fetch(
+          `${API_URL}/api/user-statuses/${statuId}`,
+          {
+            method: "PUT",
+            headers: {
+              ...authHeader,
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({
+              data: {
+                isOnline: false,
+                lastSeen: new Date().toISOString(),
+                user: myData.documentId,
+              },
+            }),
+          }
+        );
+        const updated = await res.json();
+        setMyData((prev) => ({
+          ...prev,
+          user_status: updated,
+        }));
+      }
     } catch (err) {
-      setUpdating(false);
-      setSnackbar({
-        open: true,
-        message: "خطأ أثناء التحديث: " + err.message,
-        severity: "error",
-      });
+      console.error("Failed to update user status on logout:", err);
+    } finally {
+      localStorage.removeItem("token");
+      router.push("/login");
     }
   };
-
-  const groupedBrigades = useMemo(() => {
-    const map = {};
-    brigadeList.forEach((b) => {
-      if (!map[b.stage]) map[b.stage] = [];
-      map[b.stage].push(b);
-    });
-    return map;
-  }, [brigadeList]);
-
-  if (loading)
-    return (
-      <Box p={4} className="flex justify-center">
-        <CircularProgress />
-      </Box>
-    );
-  if (error)
-    return (
-      <Box p={4}>
-        <Typography color="error">خطأ في جلب البيانات: {error}</Typography>
-      </Box>
-    );
 
   return (
-    <Box p={4} className="space-y-4">
-      <Typography variant="h5">
-        {viewMode === "create"
-          ? "إنشاء جدول الحصص"
-          : viewMode === "show"
-          ? "عرض جدول الحصص"
-          : "تعديل جدول الحصص"}
-      </Typography>
+    <Box
+      sx={{
+        position: "fixed",
+        top: 16,
+        left: 16,
+        height: "calc(100vh - 32px)",
+        width: collapsed ? 85 : 270,
+        background: theme.palette.background.paper,
+        borderRadius: 2,
+        transition: "all 0.4s ease",
+        color: theme.palette.text.primary,
+        overflowY: "auto",
+        zIndex: 1300,
+      }}
+    >
+      {isLoading && <LoadingIn />}
 
-      {viewMode === "show" ? (
-        <Typography>التاريخ: {selectedDate}</Typography>
-      ) : (
-        <TextField
-          label="اختر التاريخ"
-          type="date"
-          value={selectedDate}
-          onChange={(e) => {
-            setSelectedDate(e.target.value);
-            setViewMode("create");
+      {/* Header (logo + collapse button) */}
+      <Box
+        sx={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          px: 2,
+          py: 2.5,
+        }}
+      >
+        {!collapsed && (
+          <Box
+            sx={{
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              width: 180,
+              height: 70,
+            }}
+          >
+            <Box
+              component="img"
+              src={
+                appInfo.logo
+                  ? `${API_URL}${appInfo.logo.startsWith("/") ? "" : "/"}${
+                      appInfo.logo
+                    }`
+                  : undefined
+              }
+              sx={{
+                width: "auto",
+                height: "80%",
+                objectFit: "contain",
+                maxWidth: "100%",
+                maxHeight: "100%",
+                mr: 15,
+                display: "block",
+              }}
+              alt="App Logo"
+            />
+          </Box>
+        )}
+        <IconButton
+          onClick={() => setCollapsed((prev) => !prev)}
+          sx={{
+            background: theme.palette.grey[100],
+            color: theme.palette.text.primary,
+            width: 35,
+            height: 35,
+            borderRadius: 2,
+            ml: collapsed ? "auto" : 0,
+            border: `1px solid ${alpha(theme.palette.divider, 0.4)}`,
+            "&:hover": { background: theme.palette.grey[200] },
           }}
-          InputLabelProps={{ shrink: true }}
-          fullWidth
-        />
-      )}
-
-      {viewMode === "create" && (
-        <>
-          <Button onClick={() => setSlotsOpen((o) => !o)}>
-            {slotsOpen ? "إخفاء الفترات" : "تعديل الفترات الزمنية"}
-          </Button>
-          {slotsOpen && (
-            <Box className="flex space-x-4 mb-2">
-              {customSlots.map((slot, idx) => (
-                <Stack key={idx} spacing={1} className="flex-1">
-                  <Typography variant="subtitle2">الحصة {idx + 1}</Typography>
-                  <TextField
-                    label="من"
-                    type="time"
-                    value={slot.start}
-                    onChange={(e) =>
-                      setCustomSlots((prev) =>
-                        prev.map((s, i) =>
-                          i === idx
-                            ? { ...s, start: e.target.value }
-                            : s
-                        )
-                      )
-                    }
-                    InputLabelProps={{ shrink: true }}
-                    size="small"
-                    fullWidth
-                  />
-                  <TextField
-                    label="إلى"
-                    type="time"
-                    value={slot.end}
-                    onChange={(e) =>
-                      setCustomSlots((prev) =>
-                        prev.map((s, i) =>
-                          i === idx
-                            ? { ...s, end: e.target.value }
-                            : s
-                        )
-                      )
-                    }
-                    InputLabelProps={{ shrink: true }}
-                    size="small"
-                    fullWidth
-                  />
-                </Stack>
-              ))}
-            </Box>
-          )}
-        </>
-      )}
-
-      <Paper className="rounded-lg shadow-lg overflow-auto">
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell align="center">المرحلة</TableCell>
-              <TableCell align="center">الفرقة</TableCell>
-              {customSlots.map((slot, idx) => (
-                <SlotHeader key={idx} slot={slot} />
-              ))}
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            <AnimatePresence>
-              {Object.entries(groupedBrigades).map(
-                ([stage, brigadesOfStage]) =>
-                  brigadesOfStage.map((b, idx) => (
-                    <BrigadeRow
-                      key={b.id}
-                      brigade={b}
-                      stageRowSpan={idx === 0 ? brigadesOfStage.length : 0}
-                      customSlots={customSlots}
-                      viewMode={viewMode}
-                      selection={selection}
-                      handleChange={handleChange}
-                      rowErrors={rowErrors}
-                      seances={seances}
-                      editedSeances={editedSeances}
-                      handleEditChange={handleEditChange}
-                      courseList={courseList}
-                      salleList={salleList}
-                      userList={userList}
-                    />
-                  ))
-              )}
-            </AnimatePresence>
-          </TableBody>
-        </Table>
-      </Paper>
-
-      <Box className="flex space-x-2">
-        {viewMode === "create" && (
-          <>
-            <Button
-              variant="contained"
-              onClick={handleCreate}
-              disabled={submitting}
-              startIcon={submitting && <CircularProgress size={20} />}
-            >
-              {submitting ? "جاري الإنشاء..." : "إنشاء"}
-            </Button>
-            <Button
-              variant="outlined"
-              onClick={() => {
-                setSelection({});
-                setRowErrors({});
-                sessionStorage.removeItem(storageKey);
-                sessionStorage.removeItem("lastProgression");
-              }}
-            >
-              إعادة ضبط
-            </Button>
-          </>
-        )}
-        {viewMode === "show" && (
-          <>
-            <Button
-              variant="contained"
-              color="secondary"
-              onClick={() => {
-                sessionStorage.removeItem(storageKey);
-                sessionStorage.removeItem("lastProgression");
-                setSelection({});
-                setViewMode("create");
-              }}
-            >
-              جديد
-            </Button>
-            <Button variant="contained" onClick={() => setViewMode("edit")}>
-              تعديل
-            </Button>
-          </>
-        )}
-        {viewMode === "edit" && (
-          <>
-            <Button
-              variant="contained"
-              color="primary"
-              onClick={handleUpdateConfirm}
-              disabled={updating}
-              startIcon={updating && <CircularProgress size={20} />}
-            >
-              {updating ? "جاري التحديث..." : "تأكيد التحديث"}
-            </Button>
-            <Button variant="outlined" onClick={() => setViewMode("show")}>
-              إلغاء
-            </Button>
-          </>
-        )}
+        >
+          {collapsed ? <MenuIcon /> : <ChevronLeft />}
+        </IconButton>
       </Box>
 
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={4000}
-        onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
-      >
-        <Alert
-          severity={snackbar.severity}
-          onClose={() => setSnackbar((s) => ({ ...s, open: false }))}
-        >
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
+      {/* Menu List */}
+      <List sx={{ px: 1 }}>
+        {menuItems.map((item) => (
+          <ListItem key={item.key} disablePadding>
+            <ListItemButton
+              onClick={() => setMenuOption(item.key)}
+              sx={{
+                borderRadius: 2,
+                px: 2,
+                mb: 1,
+                backgroundColor:
+                  menuOption === item.key
+                    ? alpha(theme.palette.primary.main, 0.15)
+                    : "transparent",
+                color:
+                  menuOption === item.key
+                    ? theme.palette.primary.main
+                    : theme.palette.text.primary,
+                transition: "0.3s",
+                "&:hover": {
+                  backgroundColor: alpha(theme.palette.primary.main, 0.1),
+                  color: theme.palette.primary.main,
+                },
+              }}
+            >
+              <ListItemIcon
+                sx={{
+                  color: "inherit",
+                  minWidth: 0,
+                  mr: collapsed ? 0 : 2,
+                  justifyContent: "center",
+                }}
+              >
+                {item.icon}
+              </ListItemIcon>
+              {!collapsed && <ListItemText primary={item.label} />}
+            </ListItemButton>
+          </ListItem>
+        ))}
+      </List>
 
-      <Dialog
-        open={existsDialog}
-        onClose={() => setExistsDialog(false)}
+      <Divider sx={{ my: 2, borderColor: alpha(theme.palette.divider, 0.2) }} />
+
+      {/* User Card */}
+      <Box
+        sx={{
+          mx: 2,
+          mb: 2,
+          p: 1.5,
+          display: "flex",
+          alignItems: "center",
+          gap: 1.5,
+          borderRadius: 3,
+          background: alpha(theme.palette.grey[100], 0.6),
+        }}
       >
-        <DialogTitle>تنبيه</DialogTitle>
-        <DialogContent>
-          <Typography>
-            جدول الحصص لهذا اليوم موجود بالفعل.
-          </Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setExistsDialog(false)}>موافق</Button>
-        </DialogActions>
-      </Dialog>
+        {loading || !myData ? (
+          <Avatar sx={{ width: 40, height: 40 }} />
+        ) : (
+          <Box sx={{ position: "relative" }}>
+            <Avatar
+              src={
+                myData.imgProfile?.url
+                  ? `${API_URL}${myData.imgProfile.url}`
+                  : undefined
+              }
+              sx={{
+                width: 40,
+                height: 40,
+                border: `2px solid ${alpha(theme.palette.primary.main, 0.3)}`,
+                backgroundColor: alpha(theme.palette.primary.main, 0.15),
+              }}
+            >
+              {!myData.imgProfile?.url && myData.username.charAt(0)}
+            </Avatar>
+            <Box
+              sx={{
+                position: "absolute",
+                bottom: 2,
+                right: 2,
+                width: 10,
+                height: 10,
+                backgroundColor: myData.user_status?.isOnline
+                  ? theme.palette.success.main
+                  : theme.palette.error.main,
+                border: `2px solid ${theme.palette.background.paper}`,
+                borderRadius: "50%",
+              }}
+            />
+          </Box>
+        )}
+
+        {!collapsed && !loading && myData && (
+          <Box sx={{ flexGrow: 1, overflow: "hidden" }}>
+            <Typography noWrap sx={{ fontWeight: 600 }}>
+              {myData.username}
+            </Typography>
+            <Typography variant="caption" sx={{ color: "text.secondary" }}>
+              {myData.role?.name}
+            </Typography>
+          </Box>
+        )}
+
+        {!collapsed && (
+          <Tooltip title="Logout">
+            <IconButton
+              onClick={handleLogout}
+              sx={{
+                background: alpha(theme.palette.error.main, 0.1),
+                "&:hover": { background: alpha(theme.palette.error.main, 0.2) },
+              }}
+            >
+              <LogoutIcon sx={{ color: "error.main" }} />
+            </IconButton>
+          </Tooltip>
+        )}
+      </Box>
     </Box>
   );
 }

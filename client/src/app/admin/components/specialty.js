@@ -36,7 +36,7 @@ import LoadingIn from "@/app/hooks/LoadingIn";
 
 const MotionTableRow = motion(TableRow);
 
-export default function SalleCrud() {
+export default function Specialty() {
   // ——— حالات الـ State ———
   const [salles, setSalles] = useState([]);
   const [openDialog, setOpenDialog] = useState(false);
